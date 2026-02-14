@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sun Tower RWA - Admin CMS</title>
+<style>
+  :root { --primary: #1a237e; --secondary: #ff6f00; --bg: #f0f2f5; --card: #fff; --text: #212121; --success: #2e7d32; --danger: #c62828; --border: #e0e0e0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* Login */
+  .login-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #0d1b4a, #1a237e); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .login-overlay.hidden { display: none; }
+  .login-card { background: #fff; border-radius: 16px; padding: 40px; width: 90%; max-width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .login-card h2 { color: var(--primary); text-align: center; margin-bottom: 5px; }
+  .login-card .sub { color: #666; text-align: center; margin-bottom: 25px; font-size: 0.9rem; }
+  .login-card .logo { text-align: center; margin-bottom: 15px; }
+  .login-card .logo div { display: inline-flex; width: 60px; height: 60px; background: linear-gradient(135deg, #ff6f00, #ff8f00); border-radius: 14px; align-items: center; justify-content: center; color: #fff; font-size: 1.5rem; font-weight: 800; }
+
+  /* Header */
+  .admin-header { background: linear-gradient(90deg, #0d1b4a, #1a237e); color: #fff; padding: 10px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; }
+  .admin-header h1 { font-size: 1.1rem; flex: 1; }
+  .admin-header .status { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+  .status-connected { background: #2e7d32; }
+  .status-saving { background: #f57f17; }
+  .status-error { background: #c62828; }
+
+  /* Container */
+  .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+  /* Section */
+  .section { background: var(--card); border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+  .section-header { background: linear-gradient(90deg, #e8eaf6, #c5cae9); padding: 14px 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+  .section-header:hover { background: linear-gradient(90deg, #c5cae9, #9fa8da); }
+  .section-header h3 { color: var(--primary); font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+  .section-header .toggle { font-size: 1.2rem; color: var(--primary); transition: 0.3s; }
+  .section-header .toggle.open { transform: rotate(180deg); }
+  .section-body { display: none; padding: 20px; }
+  .section-body.open { display: block; }
+  .section-count { background: var(--primary); color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; }
+
+  /* Field */
+  .field { margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; }
+  .field:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .field-label { font-size: 0.75rem; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .field-key { background: #f5f5f5; color: #666; padding: 1px 6px; border-radius: 3px; font-size: 0.65rem; font-family: monospace; }
+  .field-input { width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: inherit; transition: 0.2s; resize: vertical; }
+  .field-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26,35,126,0.12); }
+  .field-input.modified { border-color: var(--secondary); background: #fff8e1; }
+  textarea.field-input { min-height: 60px; }
+
+  /* Buttons */
+  .btn { padding: 10px 24px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+  .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-secondary { background: var(--secondary); color: #fff; }
+  .btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+  .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+
+  /* Action bar */
+  .action-bar { position: sticky; bottom: 0; background: #fff; padding: 15px 20px; box-shadow: 0 -4px 16px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; justify-content: space-between; border-top: 2px solid var(--primary); z-index: 50; }
+  .action-bar .info { font-size: 0.82rem; color: #666; }
+  .action-bar .btns { display: flex; gap: 10px; }
+
+  /* Form */
+  .form-group { margin-bottom: 15px; }
+  .form-group label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 4px; font-size: 0.85rem; }
+  .form-control { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: inherit; }
+  .form-control:focus { border-color: var(--primary); outline: none; }
+
+  /* Alerts */
+  .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; }
+  .alert-success { background: #e8f5e9; color: var(--success); border: 1px solid #a5d6a7; }
+  .alert-error { background: #ffebee; color: var(--danger); border: 1px solid #ef9a9a; }
+  .alert-info { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+
+  /* Stats */
+  .stats { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat-card { background: var(--card); border-radius: 10px; padding: 15px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; flex: 1; min-width: 120px; }
+  .stat-card .num { font-size: 2rem; font-weight: 800; color: var(--primary); }
+  .stat-card .label { font-size: 0.75rem; color: #999; text-transform: uppercase; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 80px; right: 20px; background: #333; color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 0.9rem; z-index: 9999; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  .toast.show { display: block; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Help panel */
+  .help-panel { background: #fff3e0; border: 2px solid var(--secondary); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .help-panel h3 { color: var(--secondary); margin-bottom: 10px; }
+  .help-panel ol { padding-left: 20px; }
+  .help-panel li { margin-bottom: 6px; line-height: 1.5; }
+  .help-panel code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.85rem; }
+
+  @media (max-width: 600px) {
+    .action-bar { flex-direction: column; gap: 8px; }
+    .stats { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="logo"><div>ST</div></div>
+    <h2>Admin CMS Dashboard</h2>
+    <p class="sub">Sun Tower RWA - Content Management</p>
+    <div id="loginAlert"></div>
+    <div class="form-group">
+      <label>GitHub Personal Access Token</label>
+      <input type="password" class="form-control" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:14px" onclick="doConnect()">Connect & Load Content</button>
+    <div style="margin-top:20px; padding:15px; background:#f5f5f5; border-radius:8px; font-size:0.8rem; color:#666;">
+      <strong>How to get a token:</strong><br>
+      1. Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
+      2. Click "Generate new token (classic)"<br>
+      3. Check <strong>repo</strong> scope<br>
+      4. Click Generate &rarr; Copy token<br>
+      5. Paste it above
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN HEADER -->
+<div class="admin-header" id="adminHeader" style="display:none;">
+  <div style="width:34px;height:34px;background:linear-gradient(135deg,#ff6f00,#ff8f00);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.8rem;">ST</div>
+  <h1>Sun Tower CMS Admin</h1>
+  <span class="status status-connected" id="statusBadge">Connected</span>
+  <button class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="doDisconnect()">Logout</button>
+</div>
+
+<!-- MAIN -->
+<div class="container" id="mainContent" style="display:none;">
+
+  <!-- Stats -->
+  <div class="stats" id="statsArea"></div>
+
+  <!-- Help -->
+  <div class="help-panel" id="helpPanel">
+    <h3>Quick Guide</h3>
+    <ol>
+      <li>Each section below corresponds to a page/slide on the live site</li>
+      <li>Click any section to expand and see editable fields</li>
+      <li>Edit the text in any field - modified fields turn <strong style="color:var(--secondary)">orange</strong></li>
+      <li>Click <strong>"Save & Deploy"</strong> at the bottom to push changes live</li>
+      <li>Changes go live on <strong>suntower.in</strong> within ~1 minute</li>
+    </ol>
+    <button class="btn btn-sm btn-outline" onclick="this.parentElement.style.display='none'" style="margin-top:10px">Got it, hide this</button>
+  </div>
+
+  <!-- Sections will be injected here -->
+  <div id="sectionsArea"></div>
+</div>
+
+<!-- ACTION BAR -->
+<div class="action-bar" id="actionBar" style="display:none;">
+  <div class="info">
+    <span id="modifiedCount">0</span> field(s) modified |
+    <span id="totalFields">0</span> total fields |
+    Last loaded: <span id="lastLoaded">-</span>
+  </div>
+  <div class="btns">
+    <button class="btn btn-secondary btn-sm" onclick="reloadContent()">Reload</button>
+    <a href="https://suntower.in" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none">View Site</a>
+    <button class="btn btn-success" id="saveBtn" onclick="saveAndDeploy()">Save & Deploy</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+const REPO_OWNER = 'sunilk9898';
+const REPO_NAME = 'suntower-bom';
+const FILE_PATH = 'index.html';
+const BRANCH = 'main';
+
+let token = '';
+let fileSha = '';
+let originalContent = '';
+let parsedFields = {};
+let originalValues = {};
+
+// ===== SECTION DEFINITIONS =====
+const SECTIONS = [
+  { id: 'splash', name: 'Splash Screen', icon: '&#127968;', keys: ['splash_title','splash_subtitle','splash_address','splash_contact','splash_badge','splash_button','splash_footer'] },
+  { id: 'header', name: 'Site Header', icon: '&#128196;', keys: ['header_title','header_sub'] },
+  { id: 's0', name: 'Slide 0 - Welcome', icon: '&#127775;', keys: ['s0_title','s0_subtitle','s0_election_heading','s0_election_text','s0_agenda_title','s0_agenda_1','s0_agenda_2','s0_agenda_3','s0_agenda_4','s0_agenda_5','s0_agenda_6','s0_agenda_7','s0_agenda_8','s0_why_title','s0_why_1','s0_why_2','s0_why_3','s0_why_4','s0_why_5','s0_why_6','s0_why_7'] },
+  { id: 's1', name: 'Slide 1 - Election Results', icon: '&#128203;', keys: ['s1_title','s1_subtitle'] },
+  { id: 's2', name: 'Slide 2 - Challenges', icon: '&#127919;', keys: ['s2_title','s2_subtitle'] },
+  { id: 's3', name: 'Slide 3 - Committees', icon: '&#129309;', keys: ['s3_title','s3_subtitle'] },
+  { id: 's4', name: 'Slide 4 - Positions', icon: '&#127942;', keys: ['s4_title','s4_subtitle'] },
+  { id: 's5', name: 'Slide 5 - Election Formula', icon: '&#9878;', keys: ['s5_title','s5_subtitle'] },
+  { id: 's6', name: 'Slide 6 - Legal Framework', icon: '&#9878;', keys: ['s6_title','s6_subtitle'] },
+  { id: 's7', name: 'Slide 7 - Register Members', icon: '&#128101;', keys: ['s7_title','s7_subtitle'] },
+  { id: 's8', name: 'Slide 8 - Allocation Tool', icon: '&#128295;', keys: ['s8_title','s8_subtitle'] },
+  { id: 's9', name: 'Slide 9 - Dashboard', icon: '&#128202;', keys: ['s9_title','s9_subtitle'] },
+  { id: 's10', name: 'Slide 10 - Timeline', icon: '&#128197;', keys: ['s10_title','s10_subtitle'] },
+];
+
+// ===== CONNECT =====
+async function doConnect() {
+  token = document.getElementById('tokenInput').value.trim();
+  if (!token) { showLoginAlert('Enter your GitHub token', 'error'); return; }
+
+  showLoginAlert('Connecting to GitHub...', 'info');
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!resp.ok) throw new Error(resp.status === 401 ? 'Invalid token' : 'Failed to fetch: ' + resp.status);
+    const data = await resp.json();
+    fileSha = data.sha;
+    originalContent = atob(data.content.replace(/\n/g, ''));
+    sessionStorage.setItem('st_token', token);
+    parseContent();
+    showAdmin();
+  } catch (e) {
+    showLoginAlert(e.message, 'error');
+  }
+}
+
+function showLoginAlert(msg, type) {
+  const el = document.getElementById('loginAlert');
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+// ===== PARSE CONTENT =====
+function parseContent() {
+  parsedFields = {};
+  originalValues = {};
+  // Use regex to find data-edit="key">content</tag>
+  const regex = /data-edit="([^"]+)"[^>]*>([\s\S]*?)(?=<\/[a-z])/gi;
+  let match;
+  while ((match = regex.exec(originalContent)) !== null) {
+    const key = match[1];
+    let value = match[2].trim();
+    parsedFields[key] = value;
+    originalValues[key] = value;
+  }
+}
+
+// ===== SHOW ADMIN =====
+function showAdmin() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('adminHeader').style.display = 'flex';
+  document.getElementById('mainContent').style.display = 'block';
+  document.getElementById('actionBar').style.display = 'flex';
+
+  // Stats
+  const totalKeys = Object.keys(parsedFields).length;
+  document.getElementById('statsArea').innerHTML = `
+    <div class="stat-card"><div class="num">${totalKeys}</div><div class="label">Editable Fields</div></div>
+    <div class="stat-card"><div class="num">${SECTIONS.length}</div><div class="label">Sections</div></div>
+    <div class="stat-card"><div class="num" id="modifiedStat">0</div><div class="label">Modified</div></div>
+  `;
+  document.getElementById('totalFields').textContent = totalKeys;
+  document.getElementById('lastLoaded').textContent = new Date().toLocaleTimeString();
+
+  // Build sections
+  let html = '';
+  SECTIONS.forEach((sec, si) => {
+    const fields = sec.keys.filter(k => parsedFields[k] !== undefined);
+    if (fields.length === 0) return;
+    html += `<div class="section">
+      <div class="section-header" onclick="toggleSection('sec_${sec.id}',this)">
+        <h3>${sec.icon} ${sec.name} <span class="section-count">${fields.length} fields</span></h3>
+        <span class="toggle">&#9660;</span>
+      </div>
+      <div class="section-body" id="sec_${sec.id}">`;
+    fields.forEach(key => {
+      const val = parsedFields[key];
+      const label = key.replace(/_/g, ' ').replace(/s(\d+)/, 'Slide $1 ');
+      const isLong = val.length > 80;
+      html += `<div class="field">
+        <div class="field-label">${label} <span class="field-key">${key}</span></div>
+        ${isLong ?
+          `<textarea class="field-input" id="f_${key}" oninput="markModified('${key}',this)">${escapeHtml(val)}</textarea>` :
+          `<input type="text" class="field-input" id="f_${key}" value="${escapeAttr(val)}" oninput="markModified('${key}',this)">`
+        }
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('sectionsArea').innerHTML = html;
+
+  // Auto-expand first section
+  const firstSec = document.querySelector('.section-body');
+  if (firstSec) { firstSec.classList.add('open'); firstSec.previousElementSibling.querySelector('.toggle').classList.add('open'); }
+}
+
+// ===== UI HELPERS =====
+function toggleSection(id, header) {
+  const body = document.getElementById(id);
+  const toggle = header.querySelector('.toggle');
+  body.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function markModified(key, el) {
+  const orig = originalValues[key] || '';
+  const curr = el.value;
+  if (curr !== orig) {
+    el.classList.add('modified');
+  } else {
+    el.classList.remove('modified');
+  }
+  updateModifiedCount();
+}
+
+function updateModifiedCount() {
+  const count = document.querySelectorAll('.field-input.modified').length;
+  document.getElementById('modifiedCount').textContent = count;
+  const stat = document.getElementById('modifiedStat');
+  if (stat) stat.textContent = count;
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = count > 0 ? `Save & Deploy (${count})` : 'Save & Deploy';
+}
+
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escapeAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function showToast(msg, duration) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration || 3000);
+}
+
+// ===== SAVE & DEPLOY =====
+async function saveAndDeploy() {
+  const modified = document.querySelectorAll('.field-input.modified');
+  if (modified.length === 0) { showToast('No changes to save'); return; }
+
+  const badge = document.getElementById('statusBadge');
+  const btn = document.getElementById('saveBtn');
+  badge.className = 'status status-saving';
+  badge.textContent = 'Saving...';
+  btn.disabled = true;
+  btn.textContent = 'Deploying...';
+
+  try {
+    // Build updated content
+    let updatedContent = originalContent;
+    modified.forEach(el => {
+      const key = el.id.replace('f_', '');
+      const newVal = el.value;
+      // Replace content between data-edit="key"> and </tag
+      const regex = new RegExp(`(data-edit="${key}"[^>]*>)[\\s\\S]*?(?=<\\/[a-z])`, 'i');
+      updatedContent = updatedContent.replace(regex, `$1${newVal}`);
+    });
+
+    // Encode to base64
+    const encoded = btoa(unescape(encodeURIComponent(updatedContent)));
+
+    // Get latest SHA (in case of concurrent edits)
+    const shaResp = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    const shaData = await shaResp.json();
+    fileSha = shaData.sha;
+
+    // Commit
+    const resp = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `CMS update: ${modified.length} field(s) changed via admin dashboard`,
+        content: encoded,
+        sha: fileSha,
+        branch: BRANCH
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.message || 'Failed to save');
+    }
+
+    const result = await resp.json();
+    fileSha = result.content.sha;
+
+    // Update originals
+    modified.forEach(el => {
+      const key = el.id.replace('f_', '');
+      originalValues[key] = el.value;
+      el.classList.remove('modified');
+    });
+    originalContent = updatedContent;
+    updateModifiedCount();
+
+    badge.className = 'status status-connected';
+    badge.textContent = 'Deployed!';
+    showToast('Changes saved! Site will update in ~1 minute.');
+    setTimeout(() => { badge.textContent = 'Connected'; }, 5000);
+  } catch (e) {
+    badge.className = 'status status-error';
+    badge.textContent = 'Error';
+    showToast('Error: ' + e.message, 5000);
+    setTimeout(() => { badge.className = 'status status-connected'; badge.textContent = 'Connected'; }, 5000);
+  }
+
+  btn.disabled = false;
+  updateModifiedCount();
+}
+
+// ===== RELOAD =====
+async function reloadContent() {
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    const data = await resp.json();
+    fileSha = data.sha;
+    originalContent = atob(data.content.replace(/\n/g, ''));
+    parseContent();
+    showAdmin();
+    showToast('Content reloaded from GitHub');
+  } catch (e) {
+    showToast('Reload failed: ' + e.message, 5000);
+  }
+}
+
+// ===== DISCONNECT =====
+function doDisconnect() {
+  token = '';
+  sessionStorage.removeItem('st_token');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('adminHeader').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('actionBar').style.display = 'none';
+}
+
+// ===== AUTO-RECONNECT =====
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('st_token');
+  if (saved) {
+    document.getElementById('tokenInput').value = saved;
+    doConnect();
+  }
+});
+</script>
+</body>
+</html>
