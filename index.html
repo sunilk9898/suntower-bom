@@ -382,10 +382,10 @@ function showAuth(){document.getElementById('authOverlay').classList.remove('hid
 function hideAuth(){document.getElementById('authOverlay').classList.add('hidden')}
 function showForgotPw(){document.getElementById('loginForm').style.display='none';document.getElementById('forgotForm').style.display='block'}
 function showLoginFm(){document.getElementById('loginForm').style.display='block';document.getElementById('forgotForm').style.display='none'}
-function doLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPassword').value,err=document.getElementById('loginError'),suc=document.getElementById('loginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}if(auth){auth.signInWithEmailAndPassword(e,p).then(()=>{suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');if((u[e]&&u[e]===p)||(e===ADMIN_EMAIL&&p==='admin123')){currentUser={email:e};isAdmin=e===ADMIN_EMAIL;if(!u[e]){u[e]=p;localStorage.setItem('st_users',JSON.stringify(u))}updateUI();suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}else{err.textContent='Invalid. Default admin: suntowershipra@gmail.com / admin123';err.style.display='block'}}}
+function doLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPassword').value,err=document.getElementById('loginError'),suc=document.getElementById('loginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}if(auth){auth.signInWithEmailAndPassword(e,p).then(()=>{localStorage.setItem('st_bom_session',JSON.stringify({email:e}));suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');if((u[e]&&u[e]===p)||(e===ADMIN_EMAIL&&p==='admin123')){currentUser={email:e};isAdmin=e===ADMIN_EMAIL;if(!u[e]){u[e]=p;localStorage.setItem('st_users',JSON.stringify(u))}localStorage.setItem('st_bom_session',JSON.stringify({email:e}));updateUI();suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}else{err.textContent='Invalid. Default admin: suntowershipra@gmail.com / admin123';err.style.display='block'}}}
 function doForgotPw(){const e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');err.style.display='none';suc.style.display='none';if(!e){err.textContent='Enter email';err.style.display='block';return}if(auth){auth.sendPasswordResetEmail(e).then(()=>{suc.textContent='Reset link sent!';suc.style.display='block'}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{suc.textContent='Firebase not configured. Contact admin.';suc.style.display='block'}}
 function toggleAuthBtn(){if(currentUser)doLogout();else showAuth()}
-function doLogout(){if(auth)auth.signOut();currentUser=null;isAdmin=false;residentUser=null;localStorage.removeItem('st_resident_user');updateUI();goHome()}
+function doLogout(){if(auth)auth.signOut();currentUser=null;isAdmin=false;residentUser=null;localStorage.removeItem('st_resident_user');localStorage.removeItem('st_bom_session');updateUI();goHome()}
 function updateUI(){const u=document.getElementById('headerUser'),b=document.getElementById('headerAuthBtn');if(currentUser){u.textContent=currentUser.email||'';b.textContent='Logout'}else{u.textContent='';b.textContent='Login'}}
 
 // ===== MEMBERS =====
@@ -475,7 +475,12 @@ function saveAdminProfile(){const email=document.getElementById('adminEmailField
 // ===== INIT =====
 loadMemLS();
 try{document.getElementById('nDate').value=new Date().toISOString().split('T')[0]}catch(e){}
+// Restore resident session
 try{const sr=localStorage.getItem('st_resident_user');if(sr){residentUser=JSON.parse(sr)}}catch(e){}
+// Restore BOM session (localStorage fallback when Firebase not enabled)
+try{const bs=localStorage.getItem('st_bom_session');if(bs&&!auth){const sess=JSON.parse(bs);currentUser={email:sess.email};isAdmin=sess.email===ADMIN_EMAIL;updateUI();
+// Auto-skip splash and go to BOM
+hideSplash();switchTab('bom')}}catch(e){}
 </script>
 </body>
 </html>
