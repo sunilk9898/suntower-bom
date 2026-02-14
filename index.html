@@ -20,15 +20,51 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
 
+  /* Splash Screen */
+  .splash { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; background: linear-gradient(135deg, #0d1b4a 0%, #1a237e 40%, #283593 70%, #3949ab 100%); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s, visibility 0.8s; }
+  .splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash-logo { width: 140px; height: 140px; background: linear-gradient(135deg, #ff6f00, #ff8f00); border-radius: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(255,111,0,0.4); margin-bottom: 25px; animation: logoPulse 2s ease-in-out infinite; }
+  .splash-logo svg { width: 100px; height: 100px; }
+  @keyframes logoPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .splash-title { color: #fff; font-size: 2.4rem; font-weight: 800; letter-spacing: 2px; text-align: center; margin-bottom: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .splash-subtitle { color: #ffcc80; font-size: 1.1rem; text-align: center; margin-bottom: 6px; font-weight: 500; }
+  .splash-address { color: #90caf9; font-size: 0.85rem; text-align: center; margin-bottom: 4px; }
+  .splash-contact { color: #a5d6a7; font-size: 0.82rem; text-align: center; margin-bottom: 20px; }
+  .splash-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 10px 30px; border-radius: 30px; font-size: 1rem; font-weight: 600; letter-spacing: 1px; margin-bottom: 20px; }
+  .splash-enter { background: var(--secondary); color: #fff; border: none; padding: 14px 50px; border-radius: 30px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(255,111,0,0.4); transition: 0.3s; letter-spacing: 1px; }
+  .splash-enter:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255,111,0,0.6); }
+  .splash-footer { color: rgba(255,255,255,0.4); font-size: 0.72rem; margin-top: 20px; }
+
+  /* Persistent Header */
+  .site-header { background: linear-gradient(90deg, #0d1b4a, #1a237e); color: #fff; padding: 6px 20px; display: flex; align-items: center; gap: 12px; position: fixed; top: 0; left: 0; right: 0; z-index: 1001; height: 48px; }
+  .site-header .logo-sm { width: 34px; height: 34px; background: linear-gradient(135deg, #ff6f00, #ff8f00); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .site-header .logo-sm svg { width: 24px; height: 24px; }
+  .site-header .header-text { flex: 1; }
+  .site-header .header-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; }
+  .site-header .header-sub { font-size: 0.62rem; color: #90caf9; }
+
+  /* Committee styles */
+  .committee-card { background: #fff; border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 3px 12px rgba(0,0,0,0.1); border-top: 4px solid var(--primary); transition: 0.3s; }
+  .committee-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+  .committee-card h3 { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .committee-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.2rem; flex-shrink: 0; }
+  .comm-member-slot { display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 4px 0; background: #f5f5f5; border-radius: 6px; font-size: 0.88rem; }
+  .comm-member-slot .slot-type { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .slot-bom { background: #e8eaf6; color: var(--primary); }
+  .slot-resident { background: #e8f5e9; color: var(--success); }
+  .sop-box { background: #fffde7; border: 1px solid #fff9c4; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 0.82rem; }
+  .sop-box strong { color: var(--secondary); }
+  .comm-select, .comm-input { flex: 1; padding: 5px 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; }
+  .comm-select:focus, .comm-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(26,35,126,0.15); }
+
   /* Navigation */
-  .nav { position: fixed; top: 0; left: 0; right: 0; background: var(--primary); color: #fff; padding: 10px 20px; z-index: 1000; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-  .nav h1 { font-size: 1.1rem; }
-  .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
-  .nav-links a { color: #fff; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.78rem; background: rgba(255,255,255,0.15); transition: 0.2s; }
+  .nav { position: fixed; top: 48px; left: 0; right: 0; background: #283593; color: #fff; padding: 6px 20px; z-index: 1000; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .nav-links { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+  .nav-links a { color: #fff; text-decoration: none; padding: 4px 9px; border-radius: 4px; font-size: 0.72rem; background: rgba(255,255,255,0.12); transition: 0.2s; }
   .nav-links a:hover, .nav-links a.active { background: var(--secondary); }
 
   /* Slides */
-  .slide { display: none; min-height: 100vh; padding: 80px 20px 40px; max-width: 1200px; margin: 0 auto; }
+  .slide { display: none; min-height: 100vh; padding: 110px 20px 40px; max-width: 1200px; margin: 0 auto; }
   .slide.active { display: block; }
   .slide-title { font-size: 1.8rem; color: var(--primary); border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-bottom: 25px; }
   .slide-subtitle { font-size: 1.1rem; color: #555; margin-bottom: 20px; }
@@ -106,7 +142,7 @@
 
   /* Print */
   @media print {
-    .nav { display: none; }
+    .nav, .site-header, .splash { display: none !important; }
     .slide { display: block !important; page-break-after: always; padding-top: 20px; }
     .btn, .action-bar { display: none !important; }
   }
@@ -131,20 +167,82 @@
 </head>
 <body>
 
+<!-- SPLASH SCREEN -->
+<div class="splash" id="splashScreen">
+  <div class="splash-logo">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Sun rays -->
+      <circle cx="50" cy="22" r="14" fill="#fff3e0"/>
+      <line x1="50" y1="2" x2="50" y2="8" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="50" y1="36" x2="50" y2="42" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="30" y1="22" x2="36" y2="22" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="64" y1="22" x2="70" y2="22" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="36" y1="8" x2="40" y2="12" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="60" y1="32" x2="64" y2="36" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="64" y1="8" x2="60" y2="12" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <line x1="40" y1="32" x2="36" y2="36" stroke="#fff3e0" stroke-width="3" stroke-linecap="round"/>
+      <!-- Tower -->
+      <rect x="30" y="42" width="40" height="50" rx="3" fill="#fff" opacity="0.95"/>
+      <rect x="35" y="48" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="47" y="48" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="59" y="48" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="35" y="60" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="47" y="60" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="59" y="60" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="35" y="72" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="47" y="72" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="59" y="72" width="8" height="8" rx="1" fill="#1a237e" opacity="0.7"/>
+      <!-- Door -->
+      <rect x="44" y="82" width="12" height="12" rx="2" fill="#ff6f00"/>
+    </svg>
+  </div>
+  <div class="splash-title">SUN TOWER</div>
+  <div class="splash-subtitle">Residents Welfare Association (SRWA)</div>
+  <div class="splash-address">Block 'A2', Shipra Sun City, Indirapuram, Ghaziabad - 201014</div>
+  <div class="splash-contact">&#9993; suntowershipra@gmail.com &nbsp;|&nbsp; &#9742; 0120-4311286 &nbsp;|&nbsp; Ext: 5000</div>
+  <div class="splash-badge">Board of Management 2025-26</div>
+  <button class="splash-enter" onclick="hideSplash()">ENTER PRESENTATION &rarr;</button>
+  <div class="splash-footer">New BOM Formation | Election held 01 Feb 2026 | 174 Voters</div>
+</div>
+
+<!-- PERSISTENT HEADER -->
+<div class="site-header" id="siteHeader" style="display:none;">
+  <div class="logo-sm">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="22" r="12" fill="#fff3e0"/>
+      <rect x="32" y="42" width="36" height="46" rx="3" fill="#fff" opacity="0.95"/>
+      <rect x="37" y="48" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="47" y="48" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="57" y="48" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="37" y="58" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="47" y="58" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="57" y="58" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="37" y="68" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="47" y="68" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="57" y="68" width="6" height="6" rx="1" fill="#1a237e" opacity="0.7"/>
+      <rect x="45" y="78" width="10" height="10" rx="2" fill="#ff6f00"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <div class="header-title">SUN TOWER RWA</div>
+    <div class="header-sub">Block A2, Shipra Sun City, Indirapuram, Ghaziabad | BOM 2025-26</div>
+  </div>
+</div>
+
 <!-- NAVIGATION -->
-<div class="nav">
-  <h1>SUN TOWER RWA - BOM 2025-26</h1>
+<div class="nav" id="mainNav" style="display:none;">
   <div class="nav-links">
     <a href="#" onclick="showSlide(0)" class="active" id="nav0">Welcome</a>
-    <a href="#" onclick="showSlide(1)" id="nav1">Election Result</a>
+    <a href="#" onclick="showSlide(1)" id="nav1">Election</a>
     <a href="#" onclick="showSlide(2)" id="nav2">Challenges</a>
-    <a href="#" onclick="showSlide(3)" id="nav3">Positions</a>
-    <a href="#" onclick="showSlide(4)" id="nav4">Election Formula</a>
-    <a href="#" onclick="showSlide(5)" id="nav5">Legal</a>
-    <a href="#" onclick="showSlide(6)" id="nav6">Members</a>
-    <a href="#" onclick="showSlide(7)" id="nav7">Allocate</a>
-    <a href="#" onclick="showSlide(8)" id="nav8">Dashboard</a>
-    <a href="#" onclick="showSlide(9)" id="nav9">Timeline</a>
+    <a href="#" onclick="showSlide(3)" id="nav3">Committees</a>
+    <a href="#" onclick="showSlide(4)" id="nav4">Positions</a>
+    <a href="#" onclick="showSlide(5)" id="nav5">Election Formula</a>
+    <a href="#" onclick="showSlide(6)" id="nav6">Legal</a>
+    <a href="#" onclick="showSlide(7)" id="nav7">Members</a>
+    <a href="#" onclick="showSlide(8)" id="nav8">Allocate</a>
+    <a href="#" onclick="showSlide(9)" id="nav9">Dashboard</a>
+    <a href="#" onclick="showSlide(10)" id="nav10">Timeline</a>
   </div>
 </div>
 
@@ -369,8 +467,127 @@
   </div>
 </div>
 
-<!-- SLIDE 3: POSITIONS & ROLES -->
+<!-- SLIDE 3: 6 COMMITTEES -->
 <div class="slide" id="slide3">
+  <h2 class="slide-title">6 Working Committees - Residents + BOM Partnership</h2>
+  <p class="slide-subtitle">Each committee has 5 members: 2 BOM members (including 1 Convenor) + 3 Resident volunteers. Committees work with SOPs and report to BOM monthly.</p>
+
+  <div class="card" style="border-left-color: var(--secondary); background: linear-gradient(135deg, #fff3e0, #ffe0b2);">
+    <h3 style="color: var(--secondary);">Committee Structure - How It Works</h3>
+    <div class="grid-3">
+      <div><strong>Composition:</strong> 5 members per committee<br>&#8226; 1 BOM Convenor (leads)<br>&#8226; 1 BOM Co-member<br>&#8226; 3 Resident Volunteers</div>
+      <div><strong>Governance:</strong><br>&#8226; Follow SOP guidelines for each category<br>&#8226; Meet weekly/fortnightly<br>&#8226; Report to BOM monthly<br>&#8226; Any new project = respective committee</div>
+      <div><strong>Benefits:</strong><br>&#8226; Resident participation &amp; ownership<br>&#8226; Distributed workload<br>&#8226; Transparency &amp; accountability<br>&#8226; Total: 30 people engaged (10 BOM + 18 Residents + 2 overlap)</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Committee A: Security -->
+    <div class="committee-card" style="border-top-color: #b71c1c;">
+      <h3><div class="committee-icon" style="background:#b71c1c;">&#128737;</div> Committee A - Security</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">Vendor: PANZEER (23 Guards + 2 Sup) | 6 Tasks</p>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Convenor</span> <select class="comm-select" id="commA_bom1"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Member</span> <select class="comm-select" id="commA_bom2"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 1</span> <input type="text" class="comm-input" id="commA_res1" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 2</span> <input type="text" class="comm-input" id="commA_res2" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 3</span> <input type="text" class="comm-input" id="commA_res3" placeholder="Name & Flat No"></div>
+      <div class="sop-box"><strong>SOP:</strong> Weekly CCTV review, daily patrolling report, Park Plus sticker drive, monthly welfare check of security staff, PA system test.</div>
+    </div>
+
+    <!-- Committee B: Housekeeping -->
+    <div class="committee-card" style="border-top-color: #4a148c;">
+      <h3><div class="committee-icon" style="background:#4a148c;">&#128700;</div> Committee B - Housekeeping</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">Vendor: SHINEBURG (11 Help + 1 Sup) | 8 Tasks</p>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Convenor</span> <select class="comm-select" id="commB_bom1"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Member</span> <select class="comm-select" id="commB_bom2"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 1</span> <input type="text" class="comm-input" id="commB_res1" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 2</span> <input type="text" class="comm-input" id="commB_res2" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 3</span> <input type="text" class="comm-input" id="commB_res3" placeholder="Name & Flat No"></div>
+      <div class="sop-box"><strong>SOP:</strong> Tower team adoption, weekly basement/floor cleaning, lift car shining, shaft cleaning, plant maintenance, pigeon waste cleaning schedule.</div>
+    </div>
+
+    <!-- Committee C: Fire Fighting -->
+    <div class="committee-card" style="border-top-color: #1a237e;">
+      <h3><div class="committee-icon" style="background:#1a237e;">&#128293;</div> Committee C - Fire Safety</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">Vendor: SKENTERPRISE | 5 Tasks</p>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Convenor</span> <select class="comm-select" id="commC_bom1"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Member</span> <select class="comm-select" id="commC_bom2"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 1</span> <input type="text" class="comm-input" id="commC_res1" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 2</span> <input type="text" class="comm-input" id="commC_res2" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 3</span> <input type="text" class="comm-input" id="commC_res3" placeholder="Name & Flat No"></div>
+      <div class="sop-box"><strong>SOP:</strong> Daily FAD panel check, weekly smoke detector mock run (1 tower/week), quarterly sprinkler test, sensor inventory, AMC coordination.</div>
+    </div>
+
+    <!-- Committee D: Facilities -->
+    <div class="committee-card" style="border-top-color: #01579b;">
+      <h3><div class="committee-icon" style="background:#01579b;">&#127968;</div> Committee D - Facilities &amp; Amenities</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">Library, Medical, Play Area, Club House | 6 Tasks</p>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Convenor</span> <select class="comm-select" id="commD_bom1"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Member</span> <select class="comm-select" id="commD_bom2"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 1</span> <input type="text" class="comm-input" id="commD_res1" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 2</span> <input type="text" class="comm-input" id="commD_res2" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 3</span> <input type="text" class="comm-input" id="commD_res3" placeholder="Name & Flat No"></div>
+      <div class="sop-box"><strong>SOP:</strong> Weekly library/quiz schedule, physio room availability, indoor play maintenance, driver room management, monthly movie night, tea counter vendor management.</div>
+    </div>
+
+    <!-- Committee E: Revenue -->
+    <div class="committee-card" style="border-top-color: #004d40;">
+      <h3><div class="committee-icon" style="background:#004d40;">&#128176;</div> Committee E - Revenue &amp; Finance</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">Dues, Parking, Advertising, MyGate ERP | 8 Tasks</p>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Convenor</span> <select class="comm-select" id="commE_bom1"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Member</span> <select class="comm-select" id="commE_bom2"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 1</span> <input type="text" class="comm-input" id="commE_res1" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 2</span> <input type="text" class="comm-input" id="commE_res2" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 3</span> <input type="text" class="comm-input" id="commE_res3" placeholder="Name & Flat No"></div>
+      <div class="sop-box"><strong>SOP:</strong> Monthly dues collection & defaulter letters, MyGate ERP accounting, Gate 2 parking charges, lift/kiosk ad revenue tracking, club house rental bookings, flat sell fee processing.</div>
+    </div>
+
+    <!-- Committee F: Infrastructure -->
+    <div class="committee-card" style="border-top-color: #e65100;">
+      <h3><div class="committee-icon" style="background:#e65100;">&#128679;</div> Committee F - Infrastructure &amp; Projects</h3>
+      <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">18 Projects: Renovation, Construction, Upgrades</p>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Convenor</span> <select class="comm-select" id="commF_bom1"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-bom">BOM Member</span> <select class="comm-select" id="commF_bom2"></select></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 1</span> <input type="text" class="comm-input" id="commF_res1" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 2</span> <input type="text" class="comm-input" id="commF_res2" placeholder="Name & Flat No"></div>
+      <div class="comm-member-slot"><span class="slot-type slot-resident">Resident 3</span> <input type="text" class="comm-input" id="commF_res3" placeholder="Name & Flat No"></div>
+      <div class="sop-box"><strong>SOP:</strong> Tender process (min 3 quotes for >Rs.50K), resident committee for lift renovation, project milestone tracking, Fire NOC compliance, EV charging setup, all civil/electrical/plumbing works.</div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left-color: var(--primary); margin-top: 10px;">
+    <h3>Committee Operating Guidelines (SOP Framework)</h3>
+    <div class="grid-2">
+      <div>
+        <h4 style="color: var(--primary);">Meeting &amp; Reporting</h4>
+        <ul>
+          <li>Each committee meets <strong>weekly or fortnightly</strong> as per category needs</li>
+          <li>Minutes of meeting to be shared with BOM within 48 hours</li>
+          <li><strong>Monthly report</strong> to be presented at BOM meeting</li>
+          <li>Emergency issues to be escalated to BOM Convenor within 24 hours</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color: var(--secondary);">Decision Authority</h4>
+        <ul>
+          <li>Routine operational decisions: Committee Convenor can approve</li>
+          <li>Expenditure up to Rs. 10,000: Committee approval sufficient</li>
+          <li>Expenditure Rs. 10,000-50,000: BOM approval required</li>
+          <li>Expenditure above Rs. 50,000: Tender process + BOM approval</li>
+          <li>New projects: Committee proposes, BOM approves, Committee executes</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="saveCommittees()">Save Committee Assignments</button>
+    <button class="btn btn-secondary" onclick="printCommittees()">Print Committee Sheet</button>
+  </div>
+</div>
+
+<!-- SLIDE 4: POSITIONS & ROLES -->
+<div class="slide" id="slide4">
   <h2 class="slide-title">BOM Positions & Recommended Responsibilities</h2>
   <p class="slide-subtitle">7 Positions among 10 members - role clarity for effective governance</p>
 
@@ -458,8 +675,8 @@
   </div>
 </div>
 
-<!-- SLIDE 4: ELECTION FORMULA -->
-<div class="slide" id="slide4">
+<!-- SLIDE 5: ELECTION FORMULA -->
+<div class="slide" id="slide5">
   <h2 class="slide-title">Election Formula - Fair & Transparent</h2>
   <p class="slide-subtitle">Recommended process for electing President and Office Bearers</p>
 
@@ -520,8 +737,8 @@
   </div>
 </div>
 
-<!-- SLIDE 5: LEGAL PROVISIONS -->
-<div class="slide" id="slide5">
+<!-- SLIDE 6: LEGAL PROVISIONS -->
+<div class="slide" id="slide6">
   <h2 class="slide-title">Legal Framework - UP Apartment Act 2010</h2>
   <p class="slide-subtitle">Key provisions to ensure legally compliant BOM formation</p>
 
@@ -603,8 +820,8 @@
   </div>
 </div>
 
-<!-- SLIDE 6: REGISTER MEMBERS -->
-<div class="slide" id="slide6">
+<!-- SLIDE 7: REGISTER MEMBERS -->
+<div class="slide" id="slide7">
   <h2 class="slide-title">Register BOM Members</h2>
   <p class="slide-subtitle">Enter details of 10 elected BOM members - this data will be used in the allocation tool</p>
 
@@ -618,22 +835,22 @@
   </div>
 </div>
 
-<!-- SLIDE 7: TASK ALLOCATION TOOL -->
-<div class="slide" id="slide7">
+<!-- SLIDE 8: TASK ALLOCATION TOOL -->
+<div class="slide" id="slide8">
   <h2 class="slide-title">Responsibility Allocation Tool</h2>
   <p class="slide-subtitle">Assign each challenge/task to a BOM member. Use Auto-Assign for recommended distribution.</p>
 
   <div class="action-bar">
     <button class="btn btn-primary" onclick="autoAssign()">Auto-Assign (Based on Position)</button>
     <button class="btn btn-secondary" onclick="clearAssignments()">Clear All Assignments</button>
-    <button class="btn btn-success" onclick="showSlide(8)">View Dashboard</button>
+    <button class="btn btn-success" onclick="showSlide(9)">View Dashboard</button>
   </div>
 
   <div id="allocationArea"></div>
 </div>
 
-<!-- SLIDE 8: DASHBOARD -->
-<div class="slide" id="slide8">
+<!-- SLIDE 9: DASHBOARD -->
+<div class="slide" id="slide9">
   <h2 class="slide-title">Allocation Dashboard</h2>
   <p class="slide-subtitle">Visual summary of responsibility distribution among BOM members</p>
 
@@ -650,8 +867,8 @@
   <div id="detailedReport" style="margin-top: 20px;"></div>
 </div>
 
-<!-- SLIDE 9: TIMELINE -->
-<div class="slide" id="slide9">
+<!-- SLIDE 10: TIMELINE -->
+<div class="slide" id="slide10">
   <h2 class="slide-title">Action Timeline - First 90 Days</h2>
   <p class="slide-subtitle">Phased approach to take charge and deliver results</p>
 
@@ -806,9 +1023,10 @@ function showSlide(n) {
   document.getElementById('nav' + n).classList.add('active');
   window.scrollTo(0, 0);
 
-  if (n === 6) initMemberForm();
-  if (n === 7) initAllocationTool();
-  if (n === 8) generateDashboard();
+  if (n === 3) initCommitteeDropdowns();
+  if (n === 7) initMemberForm();
+  if (n === 8) initAllocationTool();
+  if (n === 9) generateDashboard();
 }
 
 // ===================== MEMBER REGISTRATION =====================
@@ -872,7 +1090,7 @@ function saveMembers() {
 
   localStorage.setItem('suntower_members', JSON.stringify(members));
   alert('Members saved! Proceeding to Allocation Tool.');
-  showSlide(7);
+  showSlide(8);
 }
 
 function loadSampleMembers() {
@@ -1075,6 +1293,56 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
+// ===================== SPLASH SCREEN =====================
+function hideSplash() {
+  document.getElementById('splashScreen').classList.add('hidden');
+  document.getElementById('siteHeader').style.display = 'flex';
+  document.getElementById('mainNav').style.display = 'flex';
+  setTimeout(() => { document.getElementById('splashScreen').style.display = 'none'; }, 800);
+}
+
+// ===================== COMMITTEE FUNCTIONS =====================
+function initCommitteeDropdowns() {
+  const validMembers = members.filter(m => m && m.name);
+  const selects = document.querySelectorAll('.comm-select');
+  selects.forEach(sel => {
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">-- Select BOM Member --</option>';
+    validMembers.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = `${m.name} (${m.flat})`;
+      if (m.name === currentVal) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+  // Load saved committee data
+  try {
+    const saved = JSON.parse(localStorage.getItem('suntower_committees') || '{}');
+    Object.keys(saved).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = saved[id];
+    });
+  } catch(e) {}
+}
+
+function saveCommittees() {
+  const data = {};
+  ['A','B','C','D','E','F'].forEach(c => {
+    ['bom1','bom2','res1','res2','res3'].forEach(slot => {
+      const id = `comm${c}_${slot}`;
+      const el = document.getElementById(id);
+      if (el) data[id] = el.value;
+    });
+  });
+  localStorage.setItem('suntower_committees', JSON.stringify(data));
+  alert('Committee assignments saved!');
+}
+
+function printCommittees() {
+  window.print();
+}
+
 // ===================== INIT =====================
 // Load saved data
 try {
@@ -1084,6 +1352,7 @@ try {
 
 // Keyboard navigation
 document.addEventListener('keydown', function(e) {
+  if (document.getElementById('splashScreen') && !document.getElementById('splashScreen').classList.contains('hidden')) return;
   const slides = document.querySelectorAll('.slide');
   let current = 0;
   slides.forEach((s, i) => { if (s.classList.contains('active')) current = i; });
