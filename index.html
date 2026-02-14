@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sun Tower RWA - BOM Formation & Responsibility Allocation</title>
+<style>
+  :root {
+    --primary: #1a237e;
+    --secondary: #ff6f00;
+    --accent: #00695c;
+    --bg: #f5f5f5;
+    --card: #fff;
+    --text: #212121;
+    --light: #e8eaf6;
+    --success: #2e7d32;
+    --warning: #f57f17;
+    --danger: #c62828;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* Navigation */
+  .nav { position: fixed; top: 0; left: 0; right: 0; background: var(--primary); color: #fff; padding: 10px 20px; z-index: 1000; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .nav h1 { font-size: 1.1rem; }
+  .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nav-links a { color: #fff; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 0.78rem; background: rgba(255,255,255,0.15); transition: 0.2s; }
+  .nav-links a:hover, .nav-links a.active { background: var(--secondary); }
+
+  /* Slides */
+  .slide { display: none; min-height: 100vh; padding: 80px 20px 40px; max-width: 1200px; margin: 0 auto; }
+  .slide.active { display: block; }
+  .slide-title { font-size: 1.8rem; color: var(--primary); border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-bottom: 25px; }
+  .slide-subtitle { font-size: 1.1rem; color: #555; margin-bottom: 20px; }
+
+  /* Cards */
+  .card { background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid var(--primary); }
+  .card h3 { color: var(--primary); margin-bottom: 8px; }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 5px; line-height: 1.5; }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  @media (max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+  th { background: var(--primary); color: #fff; padding: 10px 8px; text-align: left; }
+  td { padding: 8px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  tr:hover { background: #e8eaf6; }
+
+  /* Position badges */
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: #fff; }
+  .badge-president { background: #b71c1c; }
+  .badge-vp { background: #4a148c; }
+  .badge-gs { background: #1a237e; }
+  .badge-vgs { background: #01579b; }
+  .badge-treasurer { background: #004d40; }
+  .badge-vt { background: #1b5e20; }
+  .badge-member { background: #e65100; }
+
+  /* Election formula */
+  .formula-box { background: linear-gradient(135deg, #e8eaf6, #c5cae9); padding: 20px; border-radius: 10px; border: 2px solid var(--primary); margin: 15px 0; }
+  .formula-box h4 { color: var(--primary); margin-bottom: 8px; }
+  .formula-step { display: flex; align-items: flex-start; gap: 12px; margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.7); border-radius: 8px; }
+  .step-num { background: var(--primary); color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+
+  /* Legal box */
+  .legal-box { background: #fff3e0; border: 2px solid var(--secondary); border-radius: 10px; padding: 20px; margin: 15px 0; }
+  .legal-box h4 { color: var(--danger); margin-bottom: 10px; }
+
+  /* Interactive tool styles */
+  .member-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin: 20px 0; }
+  .member-card { background: #fff; border: 2px solid #e0e0e0; border-radius: 10px; padding: 15px; transition: 0.3s; }
+  .member-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .member-card label { font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px; font-size: 0.85rem; }
+  .member-card input, .member-card select { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; margin-bottom: 8px; }
+  .member-card input:focus, .member-card select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(26,35,126,0.2); }
+
+  .task-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 6px; }
+  .task-row select { padding: 5px; border: 1px solid #ccc; border-radius: 4px; min-width: 160px; }
+  .task-category { font-weight: 700; color: var(--primary); padding: 12px; background: var(--light); border-radius: 8px; margin: 15px 0 8px; }
+
+  /* Buttons */
+  .btn { padding: 10px 24px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #283593; }
+  .btn-secondary { background: var(--secondary); color: #fff; }
+  .btn-secondary:hover { background: #e65100; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #1b5e20; }
+  .btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+
+  .action-bar { display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+
+  /* Summary dashboard */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+  .summary-card { background: #fff; border-radius: 10px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .summary-card .name { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+  .summary-card .position { margin: 5px 0; }
+  .summary-card .task-count { font-size: 2rem; font-weight: 700; color: var(--secondary); }
+  .summary-card .task-list { text-align: left; font-size: 0.82rem; margin-top: 8px; max-height: 120px; overflow-y: auto; }
+  .summary-card .task-list div { padding: 2px 0; border-bottom: 1px solid #f0f0f0; }
+
+  /* Print */
+  @media print {
+    .nav { display: none; }
+    .slide { display: block !important; page-break-after: always; padding-top: 20px; }
+    .btn, .action-bar { display: none !important; }
+  }
+
+  .highlight { background: #fff9c4; padding: 2px 6px; border-radius: 3px; }
+  .important { color: var(--danger); font-weight: 600; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 30px; }
+  .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 3px; background: var(--primary); }
+  .timeline-item { position: relative; margin-bottom: 20px; }
+  .timeline-item::before { content: ''; position: absolute; left: -24px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--secondary); border: 2px solid var(--primary); }
+  .timeline-item h4 { color: var(--primary); }
+
+  .freq-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
+  .freq-daily { background: #ffcdd2; color: #b71c1c; }
+  .freq-weekly { background: #c8e6c9; color: #1b5e20; }
+  .freq-monthly { background: #bbdefb; color: #0d47a1; }
+  .freq-quarterly { background: #e1bee7; color: #4a148c; }
+  .freq-once { background: #ffe0b2; color: #e65100; }
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <h1>SUN TOWER RWA - BOM 2025-26</h1>
+  <div class="nav-links">
+    <a href="#" onclick="showSlide(0)" class="active" id="nav0">Welcome</a>
+    <a href="#" onclick="showSlide(1)" id="nav1">Election Result</a>
+    <a href="#" onclick="showSlide(2)" id="nav2">Challenges</a>
+    <a href="#" onclick="showSlide(3)" id="nav3">Positions</a>
+    <a href="#" onclick="showSlide(4)" id="nav4">Election Formula</a>
+    <a href="#" onclick="showSlide(5)" id="nav5">Legal</a>
+    <a href="#" onclick="showSlide(6)" id="nav6">Members</a>
+    <a href="#" onclick="showSlide(7)" id="nav7">Allocate</a>
+    <a href="#" onclick="showSlide(8)" id="nav8">Dashboard</a>
+    <a href="#" onclick="showSlide(9)" id="nav9">Timeline</a>
+  </div>
+</div>
+
+<!-- SLIDE 0: WELCOME -->
+<div class="slide active" id="slide0">
+  <h2 class="slide-title">Sun Tower RWA - Board of Management 2025-26</h2>
+  <p class="slide-subtitle">New BOM Formation | Election held on 01 Feb 2026 | Responsibility Allocation</p>
+
+  <div class="card" style="border-left-color: var(--success); background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">
+    <h3 style="color: var(--success);">Election Successfully Completed - 01 February 2026</h3>
+    <p style="margin: 8px 0;">As mandated by GBM held on 16.11.2025, elections were conducted in a cordial & peaceful environment with an <strong>outstanding turnout of 174 voters</strong>. 168 valid ballot papers cast for 12 candidates. <strong>Top 10 candidates elected to BOM.</strong></p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Today's Agenda</h3>
+      <ul>
+        <li>Review election results & congratulate elected members</li>
+        <li>Overview of 50 challenges across 6 categories</li>
+        <li>Define 7 BOM positions and their roles</li>
+        <li>Fair election formula for office bearers (President, VP, etc.)</li>
+        <li>Legal provisions under UP Apartment Act 2010</li>
+        <li>Elect office bearers among 10 BOM members</li>
+        <li>Allocate responsibilities based on capacity & profession</li>
+        <li>Review consolidated dashboard & 90-day action timeline</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Why This Matters</h3>
+      <ul>
+        <li>Transparent, fair and legally compliant governance</li>
+        <li>Equal distribution of workload among all 10 members</li>
+        <li>Accountability through clear ownership of tasks</li>
+        <li>Systematic tracking of daily/weekly/monthly activities</li>
+        <li>Professional governance following UP Apartment Act</li>
+        <li>Prevent concentration of power in one individual</li>
+        <li>Serve 174+ voter families with excellence</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="border-left-color: var(--secondary); margin-top: 20px;">
+    <h3>6 Challenge Categories | 50 Tasks | 10 Elected BOM Members</h3>
+    <div class="grid-3" style="margin-top: 10px;">
+      <div><span class="badge badge-president">A</span> Security (Panzeer) - 6 tasks</div>
+      <div><span class="badge badge-vp">B</span> Housekeeping (Shineburg) - 8 tasks</div>
+      <div><span class="badge badge-gs">C</span> Fire Fighting (Skenterprise) - 5 tasks</div>
+      <div><span class="badge badge-vgs">D</span> Other Facilities - 6 tasks</div>
+      <div><span class="badge badge-treasurer">E</span> Revenue Collection - 8 tasks</div>
+      <div><span class="badge badge-vt">F</span> Infrastructure - 18 tasks</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 1: ELECTION RESULTS -->
+<div class="slide" id="slide1">
+  <h2 class="slide-title">Election Results - 01 February 2026</h2>
+  <p class="slide-subtitle">Sun Tower Residents Welfare Association (SRWA) - BOM Election 2025-26</p>
+
+  <div class="grid-2">
+    <div class="card" style="border-left-color: var(--success);">
+      <h3>Election Summary</h3>
+      <table>
+        <tr><td><strong>Election Date</strong></td><td>01 February 2026</td></tr>
+        <tr><td><strong>Mandated by GBM</strong></td><td>16 November 2025</td></tr>
+        <tr><td><strong>Total Voters Turnout</strong></td><td><strong style="color:var(--success); font-size:1.2rem;">174</strong></td></tr>
+        <tr><td><strong>Valid Ballot Papers</strong></td><td>168 (6 rejected)</td></tr>
+        <tr><td><strong>Total Candidates</strong></td><td>12</td></tr>
+        <tr><td><strong>Vacancies (BOM seats)</strong></td><td>10</td></tr>
+        <tr><td><strong>Environment</strong></td><td>Cordial & Peaceful</td></tr>
+      </table>
+    </div>
+    <div class="card" style="border-left-color: var(--primary);">
+      <h3>Key Highlights</h3>
+      <ul>
+        <li>Outstanding voter participation - shows strong community engagement</li>
+        <li>Top candidate secured <strong>129 votes</strong> (76.8% of valid ballots)</li>
+        <li>Very competitive - only <strong>23-vote gap</strong> between rank 1 and rank 10</li>
+        <li>Close contest between rank 8 & 9 (both at 106 votes)</li>
+        <li>All 10 elected members have strong mandate from residents</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Election Results - All Candidates</h3>
+    <table>
+      <tr><th>Rank</th><th>Candidate</th><th>Flat No.</th><th>Tower</th><th>Votes</th><th>% of Valid</th><th>Status</th></tr>
+      <tr style="background: #e8f5e9;"><td><strong>1</strong></td><td><strong>Sh. Lakhmi Chand</strong></td><td>304</td><td>STB</td><td><strong>129</strong></td><td>76.8%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>2</strong></td><td><strong>Sh. Sunil Kumar</strong></td><td>701</td><td>STD</td><td><strong>128</strong></td><td>76.2%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>3</strong></td><td><strong>Sh. Santosh Kumar Srivastava</strong></td><td>104</td><td>STC</td><td><strong>123</strong></td><td>73.2%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>4</strong></td><td><strong>Sh. Himanshu Chaudhary</strong></td><td>502</td><td>STC</td><td><strong>117</strong></td><td>69.6%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>5</strong></td><td><strong>Sh. Mahesh Chand Gupta</strong></td><td>901</td><td>STD</td><td><strong>115</strong></td><td>68.5%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>6</strong></td><td><strong>Sh. Biman Saha</strong></td><td>805</td><td>STC</td><td><strong>113</strong></td><td>67.3%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>7</strong></td><td><strong>Sh. Raj Kumar Rana</strong></td><td>504</td><td>STC</td><td><strong>107</strong></td><td>63.7%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>8</strong></td><td><strong>Sh. Laxman Singh Pangtey</strong></td><td>603</td><td>STC</td><td><strong>106</strong></td><td>63.1%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>9</strong></td><td><strong>Sh. Rajeev Mehta</strong></td><td>902</td><td>STC</td><td><strong>106</strong></td><td>63.1%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #e8f5e9;"><td><strong>10</strong></td><td><strong>Sh. Harendra Singh</strong></td><td>906</td><td>STD</td><td><strong>105</strong></td><td>62.5%</td><td><span class="badge badge-president" style="font-size:0.7rem;">ELECTED</span></td></tr>
+      <tr style="background: #ffebee;"><td>11</td><td>Sh. Neeraj Kumar</td><td>808</td><td>STA</td><td>94</td><td>56.0%</td><td><span style="color:#999;">Not elected</span></td></tr>
+      <tr style="background: #ffebee;"><td>12</td><td>Smt. Meenu Dutta</td><td>708</td><td>STB</td><td>64</td><td>38.1%</td><td><span style="color:#999;">Not elected</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left-color: var(--secondary);">
+    <h3>Tower-wise Representation in New BOM</h3>
+    <div class="grid-2" style="margin-top: 10px;">
+      <div>
+        <table>
+          <tr><th>Tower</th><th>Members Elected</th><th>Names</th></tr>
+          <tr><td><strong>STA</strong></td><td>0</td><td>-</td></tr>
+          <tr><td><strong>STB</strong></td><td>1</td><td>Sh. Lakhmi Chand</td></tr>
+          <tr><td><strong>STC</strong></td><td>6</td><td>Santosh, Himanshu, Biman, Raj Kumar, Laxman, Rajeev</td></tr>
+          <tr><td><strong>STD</strong></td><td>3</td><td>Sunil, Mahesh Chand, Harendra</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card" style="border-left-color: var(--warning); padding: 12px;">
+          <h4 style="color: var(--warning);">Note on Representation</h4>
+          <p style="font-size:0.9rem;">STC tower has highest representation (6 members). STA has no representation. BOM should ensure all towers get equal attention regardless of member distribution.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: ALL CHALLENGES -->
+<div class="slide" id="slide2">
+  <h2 class="slide-title">Complete Challenges & Responsibilities</h2>
+  <p class="slide-subtitle">All tasks from BOM Task Sheet - categorized with frequency</p>
+
+  <div class="card">
+    <h3><span class="badge badge-president">A</span> Security / PANZEER (23 Guards + 2 Supervisors)</h3>
+    <table>
+      <tr><th>#</th><th>Activity / Challenge</th><th>Process / Monitoring</th><th>Freq.</th></tr>
+      <tr><td>A1</td><td>100% Car owners to be issued Park Plus Sticker</td><td>Weekly pursue with residents for early implementation</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>A2</td><td>Monitoring of CCTV & critical cases</td><td>Weekly analysis with Security team & notify improvement actions</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>A3</td><td>Monitoring of Security Supervisor & Tower Guard activities</td><td>Alternate day discussion for critical issue resolution with Tower Guard</td><td><span class="freq-badge freq-daily">Daily</span></td></tr>
+      <tr><td>A4</td><td>Verification of daily Patrolling report & analyse issues</td><td>Weekly analysis with Security Supervisor / RWA maintenance</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>A5</td><td>Verification of Security Team welfare (Min wage/PF/Leave)</td><td>Monthly document verification</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>A6</td><td>Mock running of PA system from Main Gate</td><td>Daily morning musical instruments run for 1 hour</td><td><span class="freq-badge freq-daily">Daily</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge badge-vp">B</span> Housekeeping / SHINEBURG (11 Helpers + 1 Supervisor)</h3>
+    <table>
+      <tr><th>#</th><th>Activity / Challenge</th><th>Process / Monitoring</th><th>Freq.</th></tr>
+      <tr><td>B1</td><td>Adopting team with each Tower to work with Tower Guard</td><td>Weekly analyse of resident issues at tower with Tower Guard</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>B2</td><td>Plant & Flower pots at Entry points - Basement & Ground</td><td>Regular maintenance</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>B3</td><td>Daily Shining of Lift Cars & ensure dirt-free door channel</td><td>Weekly record on inspection (for KONE AMC terms)</td><td><span class="freq-badge freq-daily">Daily</span></td></tr>
+      <tr><td>B4</td><td>Cleaning of Electrical / Fire / Utility Shafts</td><td>Weekly verification</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>B5</td><td>Weekly Cleaning of Basement Car parking + Front area</td><td>Scheduled cleaning</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>B6</td><td>Weekly cleaning of Common area at all floors / Stair / Glass</td><td>Monitoring with team combined with Tower Guard</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>B7</td><td>Dusting Door/Window Glass pane for Ground floor Reception</td><td>Weekly monitoring</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>B8</td><td>Cleaning of Backside Pigeon waste through Fire Hose</td><td>Monthly verification (resident support desired)</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge badge-gs">C</span> Fire Fighting / Skenterprise</h3>
+    <table>
+      <tr><th>#</th><th>Activity / Challenge</th><th>Process / Monitoring</th><th>Freq.</th></tr>
+      <tr><td>C1</td><td>Tower Guard daily FAD panel checking & report deviations</td><td>Record verification & making Tower Guard feel easy operation</td><td><span class="freq-badge freq-daily">Daily</span></td></tr>
+      <tr><td>C2</td><td>Mock Run / Test of Water Sprinkler at Basement</td><td>Quarterly once</td><td><span class="freq-badge freq-quarterly">Quarterly</span></td></tr>
+      <tr><td>C3</td><td>Mock Run / Test for Electrical Panel room Spark/Smoke detector</td><td>Weekly - one twin tower (A/B/C/D/Club house)</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>C4</td><td>Stock availability of all type of Sensors</td><td>Inventory check</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>C5</td><td>Quarterly AMC visit by Service vendor</td><td>Scheduled AMC</td><td><span class="freq-badge freq-quarterly">Quarterly</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge badge-vgs">D</span> Running of Other Facilities</h3>
+    <table>
+      <tr><th>#</th><th>Activity / Challenge</th><th>Process / Monitoring</th><th>Freq.</th></tr>
+      <tr><td>D1</td><td>Library with Children Quiz / Movie play</td><td>Nomination from Resident</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>D2</td><td>Medical Room with Physio therapist</td><td>Operational monitoring</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>D3</td><td>Indoor Play Rooms - keep operational</td><td>Operational monitoring</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>D4</td><td>Driver's / Guest Room management</td><td>Operational monitoring</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>D5</td><td>Club House / Monthly Movie play</td><td>Event planning</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>D6</td><td>Snacks & Tea Counter</td><td>Vendor management</td><td><span class="freq-badge freq-daily">Daily</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge badge-treasurer">E</span> Revenue Collection</h3>
+    <table>
+      <tr><th>#</th><th>Activity / Challenge</th><th>Process / Monitoring</th><th>Freq.</th></tr>
+      <tr><td>E1</td><td>Collection of SEL (Society) Dues</td><td>Monitoring & issuance of letters</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>E2</td><td>Car parking through Gate No 2 - make chargeable</td><td>Implementation & monitoring</td><td><span class="freq-badge freq-once">One-time</span></td></tr>
+      <tr><td>E3</td><td>Introduce accounting entry through MyGate ERP</td><td>Updated Invoice, Payment & Collection on same platform</td><td><span class="freq-badge freq-once">One-time</span></td></tr>
+      <tr><td>E4</td><td>Lift Displays (advertising revenue)</td><td>Vendor management</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>E5</td><td>Kiosk Display (advertising revenue)</td><td>Vendor management</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>E6</td><td>Club House renting</td><td>Booking management</td><td><span class="freq-badge freq-weekly">Weekly</span></td></tr>
+      <tr><td>E7</td><td>Flat Sell Fee & Renovation Penalty</td><td>Policy enforcement</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+      <tr><td>E8</td><td>Plant Nursery (keeping basement greener)</td><td>Vendor coordination</td><td><span class="freq-badge freq-monthly">Monthly</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3><span class="badge badge-vt">F</span> Infrastructure Projects</h3>
+    <table>
+      <tr><th>#</th><th>Activity / Challenge</th><th>Process / Monitoring</th><th>Freq.</th></tr>
+      <tr><td>F1</td><td>Completion of remaining work for Security Room Gate No 1</td><td>Project completion</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F2</td><td>Gate No 2 entry to merge with Park Plus & MyGate</td><td>Integration project</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F3</td><td>Painting & Repairing for Basement & Ground floor</td><td>Contractor management</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F4</td><td>Renovation of Ground Floor Reception & Entry</td><td>Design & execution</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F5</td><td>Camera Installation for more Critical Areas</td><td>Vendor selection & install</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F6</td><td>Lift Renovation - Open tender & Resident committee</td><td>Tender process</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F7</td><td>Garden area Development with preplanned layout</td><td>Local nursery involvement</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F8</td><td>Fire NOC - Exit point at roof level for evacuation (twin tower)</td><td>Compliance project</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F9</td><td>Swimming Pool</td><td>Feasibility & construction</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F10</td><td>Club House with Closed Kitchen area - Internal facilitation</td><td>Renovation</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F11</td><td>Tools Rack & Electrician Rest area at DG Backup Room</td><td>Setup</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F12</td><td>Renovation of DG Basement area - Indoor Play area</td><td>Renovation</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F13</td><td>Painting & Closing of openings at Lift Room / 11th Floor</td><td>Maintenance</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F14</td><td>Setting up Electric Charging Station (Gr Floor) - public</td><td>Vendor selection</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F15</td><td>Repairing of Overhead Tank</td><td>Contractor work</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F16</td><td>Repairing of Rain Water / Kitchen / Toilet Pipe Shaft</td><td>Plumbing contractor</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F17</td><td>Ground Floor Toilet renovation / New opening</td><td>Renovation</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+      <tr><td>F18</td><td>Illumination all around</td><td>Electrical contractor</td><td><span class="freq-badge freq-once">Project</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SLIDE 3: POSITIONS & ROLES -->
+<div class="slide" id="slide3">
+  <h2 class="slide-title">BOM Positions & Recommended Responsibilities</h2>
+  <p class="slide-subtitle">7 Positions among 10 members - role clarity for effective governance</p>
+
+  <div class="grid-2">
+    <div class="card" style="border-left-color: #b71c1c;">
+      <h3><span class="badge badge-president">President</span></h3>
+      <p><strong>Overall leadership & external representation</strong></p>
+      <ul>
+        <li>Chair all BOM and General Body meetings</li>
+        <li>Final approval authority on expenditure above threshold</li>
+        <li>Liaison with Government bodies, Police, Fire dept</li>
+        <li>Oversee all 6 categories at strategic level</li>
+        <li>Conflict resolution among members/residents</li>
+        <li><strong>Ideal Profile:</strong> Leadership experience, good public relations, management background</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: #4a148c;">
+      <h3><span class="badge badge-vp">Vice President</span></h3>
+      <p><strong>Deputize President & lead Infrastructure</strong></p>
+      <ul>
+        <li>Act as President in absence</li>
+        <li>Lead Category F - Infrastructure Projects</li>
+        <li>Oversee tender processes and vendor selection</li>
+        <li>Co-sign on major decisions</li>
+        <li><strong>Ideal Profile:</strong> Engineering/construction background, project management skills</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: #1a237e;">
+      <h3><span class="badge badge-gs">General Secretary</span></h3>
+      <p><strong>Operations, compliance & documentation</strong></p>
+      <ul>
+        <li>Day-to-day operations management</li>
+        <li>Lead Category A - Security & Category B - Housekeeping</li>
+        <li>Maintain minutes of meetings, records, registers</li>
+        <li>Coordinate with all vendors and service providers</li>
+        <li>Ensure compliance with UP Apartment Act</li>
+        <li><strong>Ideal Profile:</strong> Administrative experience, organized, available for daily coordination</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: #01579b;">
+      <h3><span class="badge badge-vgs">Vice General Secretary</span></h3>
+      <p><strong>Support operations & lead facilities</strong></p>
+      <ul>
+        <li>Assist General Secretary in daily operations</li>
+        <li>Lead Category C - Fire Fighting & Category D - Facilities</li>
+        <li>Manage fire safety compliance and AMC vendors</li>
+        <li>Coordinate library, medical room, play areas, club house</li>
+        <li><strong>Ideal Profile:</strong> Safety awareness, community engagement skills</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: #004d40;">
+      <h3><span class="badge badge-treasurer">Treasurer</span></h3>
+      <p><strong>Financial management & revenue</strong></p>
+      <ul>
+        <li>Lead Category E - Revenue Collection</li>
+        <li>Maintain all financial records and bank accounts</li>
+        <li>Prepare annual budget and quarterly financial statements</li>
+        <li>Manage MyGate ERP accounting</li>
+        <li>Dues collection tracking and defaulter follow-up</li>
+        <li><strong>Ideal Profile:</strong> CA/Finance/Banking background, accounting knowledge</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: #1b5e20;">
+      <h3><span class="badge badge-vt">Vice Treasurer</span></h3>
+      <p><strong>Support finance & audit compliance</strong></p>
+      <ul>
+        <li>Assist Treasurer in financial management</li>
+        <li>Handle vendor payments and petty cash</li>
+        <li>Internal audit and expense verification</li>
+        <li>Manage advertising revenue (Lift/Kiosk displays)</li>
+        <li><strong>Ideal Profile:</strong> Commerce/Accounts background</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: #e65100;">
+      <h3><span class="badge badge-member">Executive Members (4)</span></h3>
+      <p><strong>Category leads & project ownership</strong></p>
+      <ul>
+        <li>Each assigned 2-3 specific categories or projects</li>
+        <li>Lead sub-committees (Garden, Swimming Pool, EV Charging, etc.)</li>
+        <li>Support office bearers in their categories</li>
+        <li>Resident grievance handling for assigned towers</li>
+        <li><strong>Ideal Profiles:</strong> Mix of technical, legal, medical, IT professionals</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: ELECTION FORMULA -->
+<div class="slide" id="slide4">
+  <h2 class="slide-title">Election Formula - Fair & Transparent</h2>
+  <p class="slide-subtitle">Recommended process for electing President and Office Bearers</p>
+
+  <div class="formula-box">
+    <h4>Proposed Election Process (Among 10 Elected BOM Members)</h4>
+    <div class="formula-step">
+      <div class="step-num">1</div>
+      <div><strong>Eligibility Screening:</strong> Check if any member has held the President position for 2 or more terms. Such members are <span class="important">BARRED from contesting for President</span> (anti-monopoly rule). They remain eligible for other positions.</div>
+    </div>
+    <div class="formula-step">
+      <div class="step-num">2</div>
+      <div><strong>Nomination Round:</strong> Each eligible member can self-nominate or be nominated by another BOM member for any position. A member can be nominated for multiple positions but must choose one if elected.</div>
+    </div>
+    <div class="formula-step">
+      <div class="step-num">3</div>
+      <div><strong>Secret Ballot - President First:</strong> All 10 BOM members vote by secret ballot for President. Candidate with simple majority (>50%) wins. If no majority, top 2 go to runoff.</div>
+    </div>
+    <div class="formula-step">
+      <div class="step-num">4</div>
+      <div><strong>Vice President Election:</strong> Remaining 9 members (excluding elected President) are eligible. Secret ballot among all 10 members. Simple majority wins.</div>
+    </div>
+    <div class="formula-step">
+      <div class="step-num">5</div>
+      <div><strong>Sequential Election:</strong> Continue same process for General Secretary, Vice General Secretary, Treasurer, Vice Treasurer - each time excluding already elected office bearers from candidacy.</div>
+    </div>
+    <div class="formula-step">
+      <div class="step-num">6</div>
+      <div><strong>Remaining Members:</strong> The 4 remaining members automatically become Executive Members of BOM.</div>
+    </div>
+    <div class="formula-step">
+      <div class="step-num">7</div>
+      <div><strong>Consensus Option:</strong> If all 10 members unanimously agree on a slate, positions can be allocated by consensus without voting. This must be recorded in minutes with all members' signatures.</div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left-color: var(--danger);">
+    <h3>Anti-Monopoly Safeguards</h3>
+    <table>
+      <tr><th>Rule</th><th>Description</th><th>Rationale</th></tr>
+      <tr><td><strong>2-Term Cap for President</strong></td><td>Any person who has served as President for 2 terms (consecutive or non-consecutive) cannot contest for President again</td><td>Prevents power concentration; allows fresh leadership</td></tr>
+      <tr><td><strong>Cooling Period</strong></td><td>Recommended: After serving 2 terms as President, minimum 1 term gap before any office bearer position</td><td>Reduces undue influence</td></tr>
+      <tr><td><strong>Rotation Principle</strong></td><td>Encourage rotation of Treasurer position every 2 terms for financial transparency</td><td>Prevents financial irregularities</td></tr>
+      <tr><td><strong>Conflict of Interest</strong></td><td>Members with vendor relationships must declare and recuse from related decisions</td><td>Transparency and fairness</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Scoring Matrix for Position Allocation (If Consensus Route)</h3>
+    <p style="margin-bottom: 10px;">Score each candidate 1-5 on these parameters to match best person to position:</p>
+    <table>
+      <tr><th>Parameter</th><th>Weight</th><th>Relevant For</th></tr>
+      <tr><td>Leadership & Decision Making</td><td>25%</td><td>President, VP</td></tr>
+      <tr><td>Professional Background Match</td><td>25%</td><td>All positions</td></tr>
+      <tr><td>Availability (Daily/Weekly)</td><td>20%</td><td>Gen Secretary, Treasurer</td></tr>
+      <tr><td>Past RWA/Community Experience</td><td>15%</td><td>All positions</td></tr>
+      <tr><td>Communication & Resident Relations</td><td>15%</td><td>President, Gen Secretary</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- SLIDE 5: LEGAL PROVISIONS -->
+<div class="slide" id="slide5">
+  <h2 class="slide-title">Legal Framework - UP Apartment Act 2010</h2>
+  <p class="slide-subtitle">Key provisions to ensure legally compliant BOM formation</p>
+
+  <div class="legal-box">
+    <h4>Important: UP Apartment (Promotion of Construction, Ownership and Maintenance) Act, 2010</h4>
+    <p style="margin-bottom: 10px;">This Act governs the formation and functioning of Apartment Owners' Associations (AOA) / RWAs in Uttar Pradesh.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="border-left-color: var(--danger);">
+      <h3>Key Legal Provisions</h3>
+      <ul>
+        <li><strong>Section 13 - Association of Apartment Owners:</strong> Mandates formation of AOA; all apartment owners are members by default</li>
+        <li><strong>Section 14 - Executive Committee (BOM):</strong> AOA shall elect an Executive Committee to manage day-to-day affairs</li>
+        <li><strong>Section 15 - Common Areas:</strong> BOM responsible for maintenance of common areas and facilities</li>
+        <li><strong>Section 16 - Maintenance Charges:</strong> BOM empowered to collect and manage maintenance funds</li>
+        <li><strong>Bye-Laws:</strong> AOA must frame bye-laws governing elections, tenure, disqualification criteria</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: var(--warning);">
+      <h3>Disqualification Criteria (To Prevent Mala Fide)</h3>
+      <ul>
+        <li><strong>Defaulter:</strong> Member with outstanding maintenance dues beyond 3 months cannot hold office</li>
+        <li><strong>Criminal Record:</strong> Member with pending criminal cases related to fraud/embezzlement</li>
+        <li><strong>Conflict of Interest:</strong> Member who is vendor/contractor to the society</li>
+        <li><strong>Non-Resident:</strong> Member who has rented out flat and not residing (check bye-laws)</li>
+        <li><strong>Term Limit (Bye-Law):</strong> RWA can include in bye-laws that no person shall hold President post for more than 2 consecutive terms</li>
+        <li><strong>Age/Soundness:</strong> Must be major and of sound mind</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: var(--success);">
+      <h3>How to Bar Repeat Presidents - Legal Route</h3>
+      <ul>
+        <li><strong>Step 1:</strong> Pass a resolution in General Body Meeting (GBM) to amend bye-laws</li>
+        <li><strong>Step 2:</strong> Insert clause: <em>"No member shall hold the position of President for more than two terms, whether consecutive or non-consecutive"</em></li>
+        <li><strong>Step 3:</strong> Get the amended bye-laws registered with the Registrar of Societies / Competent Authority under UP Apartment Act</li>
+        <li><strong>Step 4:</strong> This becomes legally binding and enforceable</li>
+        <li class="important">Note: Until bye-law amendment is registered, the 2-term bar is a moral/internal guideline only</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left-color: var(--accent);">
+      <h3>Recommended Bye-Law Additions</h3>
+      <ul>
+        <li>Mandatory annual audit by external CA</li>
+        <li>No single signatory for bank transactions above Rs. 25,000</li>
+        <li>Tender process mandatory for works above Rs. 50,000</li>
+        <li>Monthly financial statement to be shared with all residents</li>
+        <li>BOM meeting minimum twice a month with recorded minutes</li>
+        <li>Emergency powers to President limited to Rs. 10,000 without BOM approval</li>
+        <li>Annual General Body Meeting mandatory within 3 months of financial year end</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="border-left-color: var(--danger); margin-top: 10px;">
+    <h3>Preventing Mala Fide Intentions</h3>
+    <div class="grid-2">
+      <div>
+        <h4 style="color: var(--danger);">Red Flags to Watch</h4>
+        <ul>
+          <li>Resistance to financial transparency</li>
+          <li>Awarding contracts to known associates</li>
+          <li>Avoiding General Body Meetings</li>
+          <li>Unilateral decisions without BOM approval</li>
+          <li>Manipulating election process or voter list</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color: var(--success);">Protective Measures</h4>
+        <ul>
+          <li>Dual signatory mandatory for all payments</li>
+          <li>Rotate bank account signatories</li>
+          <li>Transparent tender with minimum 3 quotes</li>
+          <li>Resident feedback mechanism (anonymous)</li>
+          <li>Right to Information for any resident</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: REGISTER MEMBERS -->
+<div class="slide" id="slide6">
+  <h2 class="slide-title">Register BOM Members</h2>
+  <p class="slide-subtitle">Enter details of 10 elected BOM members - this data will be used in the allocation tool</p>
+
+  <div class="member-form" id="memberForm">
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="saveMembers()">Save Members & Proceed to Allocation</button>
+    <button class="btn btn-secondary" onclick="loadSampleMembers()">Load Elected Members (from Election Result)</button>
+    <button class="btn btn-success" onclick="clearMembers()">Clear All</button>
+  </div>
+</div>
+
+<!-- SLIDE 7: TASK ALLOCATION TOOL -->
+<div class="slide" id="slide7">
+  <h2 class="slide-title">Responsibility Allocation Tool</h2>
+  <p class="slide-subtitle">Assign each challenge/task to a BOM member. Use Auto-Assign for recommended distribution.</p>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="autoAssign()">Auto-Assign (Based on Position)</button>
+    <button class="btn btn-secondary" onclick="clearAssignments()">Clear All Assignments</button>
+    <button class="btn btn-success" onclick="showSlide(8)">View Dashboard</button>
+  </div>
+
+  <div id="allocationArea"></div>
+</div>
+
+<!-- SLIDE 8: DASHBOARD -->
+<div class="slide" id="slide8">
+  <h2 class="slide-title">Allocation Dashboard</h2>
+  <p class="slide-subtitle">Visual summary of responsibility distribution among BOM members</p>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="generateDashboard()">Refresh Dashboard</button>
+    <button class="btn btn-secondary" onclick="printReport()">Print Report</button>
+    <button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <div id="dashboardArea"></div>
+
+  <div id="workloadChart" style="margin-top: 20px;"></div>
+
+  <div id="detailedReport" style="margin-top: 20px;"></div>
+</div>
+
+<!-- SLIDE 9: TIMELINE -->
+<div class="slide" id="slide9">
+  <h2 class="slide-title">Action Timeline - First 90 Days</h2>
+  <p class="slide-subtitle">Phased approach to take charge and deliver results</p>
+
+  <div class="grid-2">
+    <div>
+      <div class="card" style="border-left-color: #b71c1c;">
+        <h3>Week 1-2: Formation & Handover</h3>
+        <div class="timeline">
+          <div class="timeline-item"><h4>Day 1-3</h4><p>Elect office bearers using the formula</p></div>
+          <div class="timeline-item"><h4>Day 4-7</h4><p>Complete handover from previous BOM - collect all documents, keys, passwords, bank details</p></div>
+          <div class="timeline-item"><h4>Day 8-10</h4><p>Allocate responsibilities using this tool</p></div>
+          <div class="timeline-item"><h4>Day 11-14</h4><p>Meet all vendors (Security, Housekeeping, Fire, Lift AMC) - review contracts</p></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-left-color: #e65100;">
+        <h3>Week 3-4: Quick Wins</h3>
+        <div class="timeline">
+          <div class="timeline-item"><h4>Week 3</h4><p>Complete Park Plus sticker drive for 100% cars</p></div>
+          <div class="timeline-item"><h4>Week 3</h4><p>Setup MyGate ERP for accounting</p></div>
+          <div class="timeline-item"><h4>Week 4</h4><p>Complete Security Room Gate No 1</p></div>
+          <div class="timeline-item"><h4>Week 4</h4><p>Send first monthly financial statement to residents</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="border-left-color: #1a237e;">
+        <h3>Month 2: Operational Excellence</h3>
+        <div class="timeline">
+          <div class="timeline-item"><h4>Week 5-6</h4><p>Establish daily/weekly monitoring routines for all categories</p></div>
+          <div class="timeline-item"><h4>Week 6</h4><p>Start Gate No 2 integration with Park Plus & MyGate</p></div>
+          <div class="timeline-item"><h4>Week 7</h4><p>Initiate infrastructure projects - get quotes for painting, renovation</p></div>
+          <div class="timeline-item"><h4>Week 8</h4><p>Fire NOC compliance check and action plan</p></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-left-color: #004d40;">
+        <h3>Month 3: Major Projects Launch</h3>
+        <div class="timeline">
+          <div class="timeline-item"><h4>Week 9-10</h4><p>Open tenders for Lift Renovation, Basement Painting</p></div>
+          <div class="timeline-item"><h4>Week 10</h4><p>Garden development plan finalization</p></div>
+          <div class="timeline-item"><h4>Week 11</h4><p>EV Charging station vendor selection</p></div>
+          <div class="timeline-item"><h4>Week 12</h4><p>First Quarterly Review - all BOM members present progress</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px; border-left-color: var(--success);">
+    <h3>Monthly BOM Meeting Agenda Template</h3>
+    <table>
+      <tr><th>#</th><th>Agenda Item</th><th>Duration</th><th>Owner</th></tr>
+      <tr><td>1</td><td>Previous MOM review & action items</td><td>10 min</td><td>Gen Secretary</td></tr>
+      <tr><td>2</td><td>Financial report & dues collection status</td><td>15 min</td><td>Treasurer</td></tr>
+      <tr><td>3</td><td>Security & Housekeeping performance review</td><td>15 min</td><td>Gen Secretary</td></tr>
+      <tr><td>4</td><td>Infrastructure project updates</td><td>15 min</td><td>Vice President</td></tr>
+      <tr><td>5</td><td>Fire safety & facility status</td><td>10 min</td><td>Vice Gen Secretary</td></tr>
+      <tr><td>6</td><td>Resident grievances & feedback</td><td>10 min</td><td>President</td></tr>
+      <tr><td>7</td><td>New proposals & approvals</td><td>15 min</td><td>All</td></tr>
+      <tr><td>8</td><td>Next meeting date & action items</td><td>5 min</td><td>Gen Secretary</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const TASKS = [
+  // Category A - Security
+  { id: 'A1', cat: 'A', catName: 'Security', task: '100% Car owners to issue Park Plus Sticker', freq: 'weekly', defaultPos: 'Gen Secretary' },
+  { id: 'A2', cat: 'A', catName: 'Security', task: 'Monitoring of CCTV & critical cases', freq: 'weekly', defaultPos: 'Gen Secretary' },
+  { id: 'A3', cat: 'A', catName: 'Security', task: 'Monitoring of Security Supervisor & Tower Guard', freq: 'daily', defaultPos: 'Gen Secretary' },
+  { id: 'A4', cat: 'A', catName: 'Security', task: 'Verification of daily Patrolling report', freq: 'weekly', defaultPos: 'Gen Secretary' },
+  { id: 'A5', cat: 'A', catName: 'Security', task: 'Security Team welfare (Min wage/PF/Leave)', freq: 'monthly', defaultPos: 'Gen Secretary' },
+  { id: 'A6', cat: 'A', catName: 'Security', task: 'Mock running of PA system from Main Gate', freq: 'daily', defaultPos: 'Member' },
+
+  // Category B - Housekeeping
+  { id: 'B1', cat: 'B', catName: 'Housekeeping', task: 'Adopting team with each Tower + Tower Guard', freq: 'weekly', defaultPos: 'Gen Secretary' },
+  { id: 'B2', cat: 'B', catName: 'Housekeeping', task: 'Plant & Flower pots maintenance', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'B3', cat: 'B', catName: 'Housekeeping', task: 'Daily Shining of Lift Cars & door channels', freq: 'daily', defaultPos: 'Member' },
+  { id: 'B4', cat: 'B', catName: 'Housekeeping', task: 'Cleaning of Electrical/Fire/Utility Shafts', freq: 'weekly', defaultPos: 'Vice Gen Secretary' },
+  { id: 'B5', cat: 'B', catName: 'Housekeeping', task: 'Weekly Cleaning Basement Car parking', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'B6', cat: 'B', catName: 'Housekeeping', task: 'Common area cleaning all floors/Stair/Glass', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'B7', cat: 'B', catName: 'Housekeeping', task: 'Dusting Door/Window Glass - Reception', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'B8', cat: 'B', catName: 'Housekeeping', task: 'Backside Pigeon waste cleaning', freq: 'monthly', defaultPos: 'Member' },
+
+  // Category C - Fire Fighting
+  { id: 'C1', cat: 'C', catName: 'Fire Fighting', task: 'Daily FAD panel checking & report deviations', freq: 'daily', defaultPos: 'Vice Gen Secretary' },
+  { id: 'C2', cat: 'C', catName: 'Fire Fighting', task: 'Mock Run Water Sprinkler at Basement', freq: 'quarterly', defaultPos: 'Vice Gen Secretary' },
+  { id: 'C3', cat: 'C', catName: 'Fire Fighting', task: 'Mock Run Electrical Panel Spark/Smoke detector', freq: 'weekly', defaultPos: 'Vice Gen Secretary' },
+  { id: 'C4', cat: 'C', catName: 'Fire Fighting', task: 'Stock availability of all Sensors', freq: 'monthly', defaultPos: 'Vice Gen Secretary' },
+  { id: 'C5', cat: 'C', catName: 'Fire Fighting', task: 'Quarterly AMC visit by vendor', freq: 'quarterly', defaultPos: 'Vice Gen Secretary' },
+
+  // Category D - Facilities
+  { id: 'D1', cat: 'D', catName: 'Facilities', task: 'Library with Children Quiz / Movie play', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'D2', cat: 'D', catName: 'Facilities', task: 'Medical Room with Physio therapist', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'D3', cat: 'D', catName: 'Facilities', task: 'Indoor Play Rooms - keep operational', freq: 'weekly', defaultPos: 'Vice Gen Secretary' },
+  { id: 'D4', cat: 'D', catName: 'Facilities', task: 'Driver / Guest Room management', freq: 'weekly', defaultPos: 'Member' },
+  { id: 'D5', cat: 'D', catName: 'Facilities', task: 'Club House / Monthly Movie play', freq: 'monthly', defaultPos: 'Vice Gen Secretary' },
+  { id: 'D6', cat: 'D', catName: 'Facilities', task: 'Snacks & Tea Counter', freq: 'daily', defaultPos: 'Member' },
+
+  // Category E - Revenue
+  { id: 'E1', cat: 'E', catName: 'Revenue', task: 'Collection of SEL Dues', freq: 'monthly', defaultPos: 'Treasurer' },
+  { id: 'E2', cat: 'E', catName: 'Revenue', task: 'Car parking Gate No 2 - make chargeable', freq: 'once', defaultPos: 'Treasurer' },
+  { id: 'E3', cat: 'E', catName: 'Revenue', task: 'MyGate ERP accounting integration', freq: 'once', defaultPos: 'Treasurer' },
+  { id: 'E4', cat: 'E', catName: 'Revenue', task: 'Lift Displays revenue', freq: 'monthly', defaultPos: 'Vice Treasurer' },
+  { id: 'E5', cat: 'E', catName: 'Revenue', task: 'Kiosk Display revenue', freq: 'monthly', defaultPos: 'Vice Treasurer' },
+  { id: 'E6', cat: 'E', catName: 'Revenue', task: 'Club House renting', freq: 'weekly', defaultPos: 'Vice Treasurer' },
+  { id: 'E7', cat: 'E', catName: 'Revenue', task: 'Flat Sell Fee & Renovation Penalty', freq: 'monthly', defaultPos: 'Treasurer' },
+  { id: 'E8', cat: 'E', catName: 'Revenue', task: 'Plant Nursery for Basement', freq: 'monthly', defaultPos: 'Member' },
+
+  // Category F - Infrastructure
+  { id: 'F1', cat: 'F', catName: 'Infrastructure', task: 'Security Room Gate No 1 completion', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F2', cat: 'F', catName: 'Infrastructure', task: 'Gate No 2 merge with Park Plus & MyGate', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F3', cat: 'F', catName: 'Infrastructure', task: 'Painting & Repairing Basement/Ground floor', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F4', cat: 'F', catName: 'Infrastructure', task: 'Renovation of Ground Floor Reception', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F5', cat: 'F', catName: 'Infrastructure', task: 'Camera Installation for Critical Areas', freq: 'once', defaultPos: 'Member' },
+  { id: 'F6', cat: 'F', catName: 'Infrastructure', task: 'Lift Renovation - Open Tender', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F7', cat: 'F', catName: 'Infrastructure', task: 'Garden Area Development', freq: 'once', defaultPos: 'Member' },
+  { id: 'F8', cat: 'F', catName: 'Infrastructure', task: 'Fire NOC - Roof level exit points', freq: 'once', defaultPos: 'Vice Gen Secretary' },
+  { id: 'F9', cat: 'F', catName: 'Infrastructure', task: 'Swimming Pool', freq: 'once', defaultPos: 'Member' },
+  { id: 'F10', cat: 'F', catName: 'Infrastructure', task: 'Club House Kitchen area facilitation', freq: 'once', defaultPos: 'Member' },
+  { id: 'F11', cat: 'F', catName: 'Infrastructure', task: 'Tools Rack & Electrician Rest area at DG Room', freq: 'once', defaultPos: 'Member' },
+  { id: 'F12', cat: 'F', catName: 'Infrastructure', task: 'DG Basement Indoor Play area renovation', freq: 'once', defaultPos: 'Member' },
+  { id: 'F13', cat: 'F', catName: 'Infrastructure', task: 'Painting/Closing openings Lift Room/11th Floor', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F14', cat: 'F', catName: 'Infrastructure', task: 'Electric Charging Station setup', freq: 'once', defaultPos: 'Member' },
+  { id: 'F15', cat: 'F', catName: 'Infrastructure', task: 'Overhead Tank Repairing', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F16', cat: 'F', catName: 'Infrastructure', task: 'Rain Water/Kitchen/Toilet Pipe Shaft repair', freq: 'once', defaultPos: 'Vice President' },
+  { id: 'F17', cat: 'F', catName: 'Infrastructure', task: 'Ground Floor Toilet renovation', freq: 'once', defaultPos: 'Member' },
+  { id: 'F18', cat: 'F', catName: 'Infrastructure', task: 'Illumination all around', freq: 'once', defaultPos: 'Member' },
+];
+
+const POSITIONS = [
+  'President', 'Vice President', 'Gen Secretary', 'Vice Gen Secretary',
+  'Treasurer', 'Vice Treasurer', 'Member', 'Member', 'Member', 'Member'
+];
+
+const PROFESSIONS = [
+  'Engineer/Technical', 'CA/Finance/Banking', 'Legal/Advocate', 'Doctor/Medical',
+  'IT/Software', 'Business/Entrepreneur', 'Government Service', 'Education/Teacher',
+  'Retired Professional', 'Management/Corporate', 'Real Estate', 'Other'
+];
+
+let members = [];
+let assignments = {};
+
+// ===================== NAVIGATION =====================
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById('slide' + n).classList.add('active');
+  document.getElementById('nav' + n).classList.add('active');
+  window.scrollTo(0, 0);
+
+  if (n === 6) initMemberForm();
+  if (n === 7) initAllocationTool();
+  if (n === 8) generateDashboard();
+}
+
+// ===================== MEMBER REGISTRATION =====================
+function initMemberForm() {
+  const form = document.getElementById('memberForm');
+  form.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const m = members[i] || {};
+    const votesInfo = m.votes ? ` | Votes: ${m.votes}` : '';
+    form.innerHTML += `
+      <div class="member-card">
+        <div style="text-align:center; font-weight:700; color:var(--primary); margin-bottom:10px;">Member ${i + 1} (Rank #${i+1}${votesInfo})</div>
+        <label>Full Name</label>
+        <input type="text" id="name_${i}" value="${m.name || ''}" placeholder="Enter full name">
+        <label>Flat No / Tower</label>
+        <input type="text" id="flat_${i}" value="${m.flat || ''}" placeholder="e.g. A-101">
+        <label>Profession</label>
+        <select id="prof_${i}">
+          <option value="">-- Select --</option>
+          ${PROFESSIONS.map(p => `<option value="${p}" ${m.profession === p ? 'selected' : ''}>${p}</option>`).join('')}
+        </select>
+        <label>Position</label>
+        <select id="pos_${i}">
+          <option value="">-- To be elected --</option>
+          ${['President','Vice President','Gen Secretary','Vice Gen Secretary','Treasurer','Vice Treasurer','Member'].map(p => `<option value="${p}" ${m.position === p ? 'selected' : ''}>${p}</option>`).join('')}
+        </select>
+        <label>Past President Terms</label>
+        <select id="terms_${i}">
+          <option value="0" ${(m.pastTerms||0)==0?'selected':''}>0 - Never been President</option>
+          <option value="1" ${(m.pastTerms||0)==1?'selected':''}>1 - One term as President</option>
+          <option value="2" ${(m.pastTerms||0)==2?'selected':''}>2 - Two terms (BARRED from President)</option>
+          <option value="3" ${(m.pastTerms||0)>=3?'selected':''}>3+ - Multiple terms (BARRED from President)</option>
+        </select>
+        <label>Phone / WhatsApp</label>
+        <input type="text" id="phone_${i}" value="${m.phone || ''}" placeholder="Mobile number">
+      </div>`;
+  }
+}
+
+function saveMembers() {
+  members = [];
+  for (let i = 0; i < 10; i++) {
+    const name = document.getElementById('name_' + i).value.trim();
+    if (!name) { members.push(null); continue; }
+    members.push({
+      name,
+      flat: document.getElementById('flat_' + i).value.trim(),
+      profession: document.getElementById('prof_' + i).value,
+      position: document.getElementById('pos_' + i).value,
+      pastTerms: parseInt(document.getElementById('terms_' + i).value) || 0,
+      phone: document.getElementById('phone_' + i).value.trim()
+    });
+  }
+
+  // Check for 2-term presidents trying to be president
+  const barred = members.filter(m => m && m.position === 'President' && m.pastTerms >= 2);
+  if (barred.length > 0) {
+    alert(`WARNING: ${barred.map(m=>m.name).join(', ')} has served 2+ terms as President and is BARRED from this position. Please change their position.`);
+    return;
+  }
+
+  localStorage.setItem('suntower_members', JSON.stringify(members));
+  alert('Members saved! Proceeding to Allocation Tool.');
+  showSlide(7);
+}
+
+function loadSampleMembers() {
+  members = [
+    { name: 'Sh. Lakhmi Chand', flat: 'STB-304', profession: '', position: '', pastTerms: 0, phone: '', votes: 129 },
+    { name: 'Sh. Sunil Kumar', flat: 'STD-701', profession: '', position: '', pastTerms: 0, phone: '', votes: 128 },
+    { name: 'Sh. Santosh Kr. Srivastava', flat: 'STC-104', profession: '', position: '', pastTerms: 0, phone: '', votes: 123 },
+    { name: 'Sh. Himanshu Chaudhary', flat: 'STC-502', profession: '', position: '', pastTerms: 0, phone: '', votes: 117 },
+    { name: 'Sh. Mahesh Chand Gupta', flat: 'STD-901', profession: '', position: '', pastTerms: 0, phone: '', votes: 115 },
+    { name: 'Sh. Biman Saha', flat: 'STC-805', profession: '', position: '', pastTerms: 0, phone: '', votes: 113 },
+    { name: 'Sh. Raj Kumar Rana', flat: 'STC-504', profession: '', position: '', pastTerms: 0, phone: '', votes: 107 },
+    { name: 'Sh. Laxman Singh Pangtey', flat: 'STC-603', profession: '', position: '', pastTerms: 0, phone: '', votes: 106 },
+    { name: 'Sh. Rajeev Mehta', flat: 'STC-902', profession: '', position: '', pastTerms: 0, phone: '', votes: 106 },
+    { name: 'Sh. Harendra Singh', flat: 'STD-906', profession: '', position: '', pastTerms: 0, phone: '', votes: 105 },
+  ];
+  initMemberForm();
+}
+
+function clearMembers() {
+  members = [];
+  localStorage.removeItem('suntower_members');
+  initMemberForm();
+}
+
+// ===================== ALLOCATION TOOL =====================
+function initAllocationTool() {
+  const area = document.getElementById('allocationArea');
+  const validMembers = members.filter(m => m && m.name);
+  if (validMembers.length === 0) {
+    area.innerHTML = '<div class="card"><h3>No members registered</h3><p>Please go to the Members slide and register BOM members first.</p></div>';
+    return;
+  }
+
+  let html = '';
+  let currentCat = '';
+  const catColors = { A: '#b71c1c', B: '#4a148c', C: '#1a237e', D: '#01579b', E: '#004d40', F: '#e65100' };
+
+  TASKS.forEach(t => {
+    if (t.cat !== currentCat) {
+      currentCat = t.cat;
+      html += `<div class="task-category" style="border-left: 4px solid ${catColors[t.cat]}">
+        Category ${t.cat} - ${t.catName} (${TASKS.filter(x=>x.cat===t.cat).length} tasks)</div>`;
+    }
+    const assigned = assignments[t.id] || '';
+    html += `<div class="task-row">
+      <strong style="min-width:35px; color:${catColors[t.cat]}">${t.id}</strong>
+      <span style="flex:1">${t.task}</span>
+      <select id="assign_${t.id}" onchange="assignments['${t.id}']=this.value">
+        <option value="">-- Assign --</option>
+        ${validMembers.map(m => `<option value="${m.name}" ${assigned===m.name?'selected':''}>${m.name} (${m.position || 'Member'})</option>`).join('')}
+      </select>
+    </div>`;
+  });
+  area.innerHTML = html;
+}
+
+function autoAssign() {
+  const validMembers = members.filter(m => m && m.name);
+  if (validMembers.length === 0) { alert('Please register members first!'); return; }
+
+  // Build position-to-member map
+  const posMap = {};
+  validMembers.forEach(m => {
+    const pos = m.position || 'Member';
+    if (!posMap[pos]) posMap[pos] = [];
+    posMap[pos].push(m.name);
+  });
+
+  // Get member list for a position, with fallback to 'Member'
+  function getMember(pos) {
+    if (posMap[pos] && posMap[pos].length > 0) return posMap[pos][0];
+    if (posMap['Member'] && posMap['Member'].length > 0) {
+      const memberList = posMap['Member'];
+      const pick = memberList[Math.floor(Math.random() * memberList.length)];
+      return pick;
+    }
+    return validMembers[0].name;
+  }
+
+  // Round-robin index for members
+  let memberIdx = 0;
+  function getNextMember() {
+    const name = posMap['Member'] ? posMap['Member'][memberIdx % posMap['Member'].length] : validMembers[memberIdx % validMembers.length].name;
+    memberIdx++;
+    return name;
+  }
+
+  TASKS.forEach(t => {
+    if (t.defaultPos === 'Member') {
+      assignments[t.id] = getNextMember();
+    } else {
+      assignments[t.id] = getMember(t.defaultPos);
+    }
+  });
+
+  initAllocationTool();
+  alert('Tasks auto-assigned based on position! You can manually adjust any assignment.');
+}
+
+function clearAssignments() {
+  assignments = {};
+  initAllocationTool();
+}
+
+// ===================== DASHBOARD =====================
+function generateDashboard() {
+  const area = document.getElementById('dashboardArea');
+  const report = document.getElementById('detailedReport');
+  const chart = document.getElementById('workloadChart');
+  const validMembers = members.filter(m => m && m.name);
+
+  if (validMembers.length === 0) {
+    area.innerHTML = '<div class="card"><p>No members registered. Please go to Members slide.</p></div>';
+    return;
+  }
+
+  // Build member task summary
+  const memberTasks = {};
+  validMembers.forEach(m => { memberTasks[m.name] = []; });
+
+  TASKS.forEach(t => {
+    const assignee = assignments[t.id];
+    if (assignee && memberTasks[assignee]) {
+      memberTasks[assignee].push(t);
+    }
+  });
+
+  const totalAssigned = Object.values(memberTasks).reduce((s, arr) => s + arr.length, 0);
+  const unassigned = TASKS.length - totalAssigned;
+
+  // Summary cards
+  let cardsHtml = `<div style="margin-bottom:15px; font-size:0.95rem;">
+    <strong>Total Tasks:</strong> ${TASKS.length} | <strong>Assigned:</strong> ${totalAssigned} |
+    <span style="color:${unassigned > 0 ? 'var(--danger)' : 'var(--success)'}"><strong>Unassigned:</strong> ${unassigned}</span>
+  </div><div class="summary-grid">`;
+
+  const posColors = { 'President': '#b71c1c', 'Vice President': '#4a148c', 'Gen Secretary': '#1a237e', 'Vice Gen Secretary': '#01579b', 'Treasurer': '#004d40', 'Vice Treasurer': '#1b5e20', 'Member': '#e65100' };
+
+  validMembers.forEach(m => {
+    const tasks = memberTasks[m.name] || [];
+    const color = posColors[m.position] || '#666';
+    cardsHtml += `<div class="summary-card" style="border-top: 4px solid ${color};">
+      <div class="name">${m.name}</div>
+      <div class="position"><span class="badge" style="background:${color}">${m.position || 'Member'}</span></div>
+      <div style="font-size:0.8rem; color:#666;">${m.flat} | ${m.profession || ''}</div>
+      <div class="task-count">${tasks.length}</div>
+      <div style="font-size:0.8rem; color:#666;">tasks assigned</div>
+      <div class="task-list">${tasks.map(t => `<div><strong>${t.id}</strong> ${t.task.substring(0, 40)}...</div>`).join('')}</div>
+    </div>`;
+  });
+  cardsHtml += '</div>';
+  area.innerHTML = cardsHtml;
+
+  // Workload bar chart (simple CSS)
+  const maxTasks = Math.max(...validMembers.map(m => (memberTasks[m.name] || []).length), 1);
+  let chartHtml = '<div class="card"><h3>Workload Distribution</h3>';
+  validMembers.forEach(m => {
+    const count = (memberTasks[m.name] || []).length;
+    const pct = (count / maxTasks) * 100;
+    const color = posColors[m.position] || '#666';
+    chartHtml += `<div style="display:flex;align-items:center;gap:10px;margin:6px 0;">
+      <span style="min-width:120px;font-size:0.85rem;font-weight:600;">${m.name}</span>
+      <div style="flex:1;background:#e0e0e0;border-radius:8px;height:24px;position:relative;">
+        <div style="width:${pct}%;background:${color};border-radius:8px;height:100%;transition:0.3s;"></div>
+        <span style="position:absolute;right:8px;top:3px;font-size:0.8rem;font-weight:600;">${count} tasks</span>
+      </div>
+    </div>`;
+  });
+  chartHtml += '</div>';
+  chart.innerHTML = chartHtml;
+
+  // Detailed report table
+  let reportHtml = '<div class="card"><h3>Detailed Allocation Report</h3><table><tr><th>Task ID</th><th>Category</th><th>Task</th><th>Frequency</th><th>Assigned To</th><th>Position</th></tr>';
+  TASKS.forEach(t => {
+    const assignee = assignments[t.id] || '<span style="color:red">UNASSIGNED</span>';
+    const member = validMembers.find(m => m.name === assignments[t.id]);
+    const pos = member ? member.position : '-';
+    reportHtml += `<tr><td>${t.id}</td><td>${t.catName}</td><td>${t.task}</td><td>${t.freq}</td><td>${assignee}</td><td>${pos}</td></tr>`;
+  });
+  reportHtml += '</table></div>';
+  report.innerHTML = reportHtml;
+}
+
+function printReport() {
+  window.print();
+}
+
+function exportCSV() {
+  const validMembers = members.filter(m => m && m.name);
+  let csv = 'Task ID,Category,Task,Frequency,Assigned To,Position,Flat,Profession\n';
+  TASKS.forEach(t => {
+    const assignee = assignments[t.id] || 'UNASSIGNED';
+    const member = validMembers.find(m => m.name === assignee);
+    csv += `"${t.id}","${t.catName}","${t.task}","${t.freq}","${assignee}","${member?member.position:''}","${member?member.flat:''}","${member?member.profession:''}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'SunTower_BOM_Allocation.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===================== INIT =====================
+// Load saved data
+try {
+  const saved = localStorage.getItem('suntower_members');
+  if (saved) members = JSON.parse(saved);
+} catch(e) {}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+  slides.forEach((s, i) => { if (s.classList.contains('active')) current = i; });
+  if (e.key === 'ArrowRight' && current < slides.length - 1) showSlide(current + 1);
+  if (e.key === 'ArrowLeft' && current > 0) showSlide(current - 1);
+});
+</script>
+</body>
+</html>
