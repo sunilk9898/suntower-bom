@@ -78,6 +78,64 @@
   </div>
 </div>
 
+<!-- RESIDENT AUTH OVERLAY -->
+<div class="auth-overlay hidden" id="residentAuthOverlay">
+  <div class="auth-card" style="max-width:460px">
+    <div class="auth-logo"><div style="display:inline-flex;width:60px;height:60px;background:linear-gradient(135deg,#00695c,#00897b);border-radius:14px;align-items:center;justify-content:center;"><svg viewBox="0 0 100 100" width="36" height="36" fill="none"><circle cx="50" cy="22" r="12" fill="#fff3e0"/><rect x="32" y="42" width="36" height="46" rx="3" fill="#fff" opacity="0.95"/><rect x="45" y="78" width="10" height="10" rx="2" fill="#00695c"/></svg></div></div>
+
+    <!-- Resident Login -->
+    <div id="resLoginForm">
+      <h2 style="color:#00695c">Resident Login</h2>
+      <p class="auth-sub">Registered flat owners only</p>
+      <div class="auth-error" id="resLoginError"></div>
+      <div class="auth-success" id="resLoginSuccess"></div>
+      <div class="form-group"><label>Email</label><input type="email" class="form-control" id="resLoginEmail" placeholder="your.email@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" class="form-control" id="resLoginPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter')doResidentLogin()"></div>
+      <button class="btn btn-lg" style="width:100%;background:#00695c;color:#fff" onclick="doResidentLogin()">Login</button>
+      <div class="auth-link" onclick="showResForgotPw()">Forgot Password?</div>
+      <div style="text-align:center;margin-top:15px;padding-top:15px;border-top:1px solid #e0e0e0">
+        <p style="color:#666;font-size:0.85rem;margin-bottom:10px">Not registered yet?</p>
+        <button class="btn btn-secondary" style="width:100%" onclick="showResRegForm()">Request Registration</button>
+      </div>
+      <div class="auth-link" onclick="hideResidentAuth()">Back to Home</div>
+    </div>
+
+    <!-- Resident Registration Request -->
+    <div id="resRegForm" style="display:none">
+      <h2 style="color:#00695c">Request Registration</h2>
+      <p class="auth-sub">Submit your details for admin verification</p>
+      <div class="auth-error" id="resRegError"></div>
+      <div class="auth-success" id="resRegSuccess"></div>
+      <div class="form-group"><label>Flat Owner Name *</label><input type="text" class="form-control" id="regOwnerName" placeholder="e.g. Sh. Sunil Kumar"></div>
+      <div class="form-group"><label>Flat Number *</label><input type="text" class="form-control" id="regFlatNo" placeholder="e.g. STC-504, STD-701"></div>
+      <div class="form-group"><label>Mobile Number *</label><input type="tel" class="form-control" id="regMobile" placeholder="e.g. 9876543210"></div>
+      <div class="form-group"><label>Email ID *</label><input type="email" class="form-control" id="regEmail" placeholder="your.email@example.com"></div>
+      <button class="btn btn-lg" style="width:100%;background:#00695c;color:#fff" onclick="submitResidentReg()">Submit Registration Request</button>
+      <div class="auth-link" onclick="showResLoginForm()">Already registered? Login</div>
+      <div class="auth-link" onclick="hideResidentAuth()">Back to Home</div>
+    </div>
+
+    <!-- Resident Forgot Password (OTP) -->
+    <div id="resForgotForm" style="display:none">
+      <h2 style="color:#00695c">Reset Password</h2>
+      <p class="auth-sub">OTP will be sent to your registered email</p>
+      <div class="auth-error" id="resForgotError"></div>
+      <div class="auth-success" id="resForgotSuccess"></div>
+      <div id="resForgotStep1">
+        <div class="form-group"><label>Registered Email</label><input type="email" class="form-control" id="resForgotEmail" placeholder="your.email@example.com"></div>
+        <button class="btn btn-lg" style="width:100%;background:#00695c;color:#fff" onclick="sendResidentOTP()">Send OTP</button>
+      </div>
+      <div id="resForgotStep2" style="display:none">
+        <div class="form-group"><label>Enter OTP (sent to email)</label><input type="text" class="form-control" id="resOtpInput" placeholder="6-digit OTP" maxlength="6" style="text-align:center;font-size:1.3rem;letter-spacing:8px"></div>
+        <div class="form-group"><label>New Password (min 6 chars)</label><input type="password" class="form-control" id="resNewPass" placeholder="Enter new password"></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" class="form-control" id="resConfirmPass" placeholder="Re-enter new password"></div>
+        <button class="btn btn-lg" style="width:100%;background:#00695c;color:#fff" onclick="verifyOTPResetPass()">Verify OTP & Reset Password</button>
+      </div>
+      <div class="auth-link" onclick="showResLoginForm()">Back to Login</div>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <div class="site-header" id="siteHeader" style="display:none;">
   <div class="logo-sm" onclick="goHome()"><svg viewBox="0 0 100 100" width="24" height="24" fill="none"><circle cx="50" cy="22" r="12" fill="#fff3e0"/><rect x="32" y="42" width="36" height="46" rx="3" fill="#fff" opacity="0.95"/><rect x="45" y="78" width="10" height="10" rx="2" fill="#ff6f00"/></svg></div>
@@ -88,7 +146,7 @@
 <!-- MAIN TABS -->
 <div class="main-tabs" id="mainTabs" style="display:none;">
   <button class="main-tab active" onclick="switchTab('bom')" id="tabBom"><span class="lock-icon">&#128274;</span> BOM Internal</button>
-  <button class="main-tab" onclick="switchTab('resident')" id="tabResident">Resident Portal</button>
+  <button class="main-tab" onclick="switchTab('resident')" id="tabResident"><span class="lock-icon">&#128274;</span> Resident Portal</button>
   <button class="main-tab" onclick="switchTab('policy')" id="tabPolicy">Policies &amp; SOP</button>
   <button class="main-tab" onclick="switchTab('notices')" id="tabNotices">Notice Board</button>
 </div>
@@ -186,6 +244,12 @@
           <button class="btn btn-success" onclick="uploadNotice()">Upload</button>
           <div class="auth-success" id="nSuc" style="margin-top:10px"></div>
         </div>
+        <div class="admin-section" style="border-color:#00695c;background:#e0f2f1"><h3 style="color:#00695c">&#128101; Resident Registration Requests</h3>
+          <div id="regRequestsArea"><p style="color:var(--text-light)">Loading...</p></div>
+        </div>
+        <div class="admin-section" style="border-color:#004d40;background:#e0f2f1"><h3 style="color:#004d40">&#9989; Approved Residents</h3>
+          <div id="approvedResidentsArea"><p style="color:var(--text-light)">Loading...</p></div>
+        </div>
         <div class="admin-section"><h3>&#128172; Resident Messages</h3><div id="adminMsgs"><p style="color:var(--text-light)">Loading...</p></div></div>
         <div class="admin-section" style="border-color:#1a237e;background:#e8eaf6"><h3 style="color:var(--primary)">&#9881; Admin Settings</h3>
           <div class="grid-2">
@@ -216,6 +280,21 @@
 
 <!-- ================ TAB: RESIDENT PORTAL ================ -->
 <div class="page" id="page_resident">
+  <div id="residentLocked" style="text-align:center;padding:80px 20px;">
+    <div style="font-size:4rem;margin-bottom:15px;">&#127968;</div>
+    <h2 style="color:#00695c;margin-bottom:10px;">Resident Portal - Login Required</h2>
+    <p style="color:var(--text-light);margin-bottom:8px;">Only registered and verified flat owners can access this section.</p>
+    <p style="color:var(--text-light);margin-bottom:25px;font-size:0.85rem">New residents can request registration below.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-lg" style="background:#00695c;color:#fff" onclick="showResidentAuth('login')">Resident Login</button>
+      <button class="btn btn-lg btn-secondary" onclick="showResidentAuth('register')">Request Registration</button>
+    </div>
+  </div>
+  <div id="residentContent" style="display:none">
+  <div id="residentWelcome" style="background:linear-gradient(135deg,#e0f2f1,#b2dfdb);border-radius:12px;padding:15px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div><span style="font-size:1.1rem;font-weight:700;color:#00695c">Welcome, </span><span id="residentNameDisplay" style="font-weight:700;color:#004d40"></span><span id="residentFlatDisplay" style="color:#666;margin-left:8px;font-size:0.85rem"></span></div>
+    <button class="btn btn-sm" style="background:#00695c;color:#fff" onclick="doResidentLogout()">Logout</button>
+  </div>
   <h2 class="page-title" data-edit="resident_title">Welcome to Sun Tower</h2>
   <p class="page-subtitle" data-edit="resident_subtitle">Stay informed and connected with your community</p>
   <div class="card" style="border-left-color:var(--success);background:linear-gradient(135deg,#e8f5e9,#c8e6c9)"><h3 style="color:var(--success)" data-edit="resident_announcement_title">New BOM Elected - February 2026</h3><p data-edit="resident_announcement_text">10 newly elected BOM members are committed to transparency and community improvement.</p></div>
@@ -238,6 +317,7 @@
     <div id="rs_emergency" style="display:none;margin-top:20px"><div class="card"><h3>Emergency Contacts</h3><div class="grid-2" style="margin-top:10px"><div class="contact-card"><div class="contact-icon" style="background:#b71c1c">&#128694;</div><div><strong>Security</strong><br>0120-4311286 Ext:5000</div></div><div class="contact-card"><div class="contact-icon" style="background:#e65100">&#128293;</div><div><strong>Fire</strong><br>101</div></div><div class="contact-card"><div class="contact-icon" style="background:#1a237e">&#128658;</div><div><strong>Police</strong><br>100 / 112</div></div><div class="contact-card"><div class="contact-icon" style="background:#004d40">&#127973;</div><div><strong>Ambulance</strong><br>108</div></div></div></div></div>
     <div id="rs_rules" style="display:none;margin-top:20px"><div class="card"><h3>Society Rules</h3><ul><li><strong>Parking:</strong> Only Park Plus sticker vehicles in basement</li><li><strong>Renovation:</strong> Prior BOM permission. Hours: 9AM-6PM Mon-Sat</li><li><strong>Pets:</strong> Leashed in common areas. Clean up after pet</li><li><strong>Noise:</strong> No loud music after 9PM</li><li><strong>Dues:</strong> Pay by 10th. Late fee after 15th</li><li><strong>Visitors:</strong> Register at gate</li></ul></div></div>
     <div id="rs_faq" style="display:none;margin-top:20px"><div class="card"><h3>FAQ</h3><div style="margin-bottom:12px"><strong>Q: How to pay maintenance?</strong><br>A: MyGate app or bank transfer. Details at security office.</div><div style="margin-bottom:12px"><strong>Q: How to book Club House?</strong><br>A: Contact BOM office. Charges & deposit apply.</div><div style="margin-bottom:12px"><strong>Q: Park Plus sticker?</strong><br>A: Visit security with car registration docs.</div><div style="margin-bottom:12px"><strong>Q: Report maintenance issue?</strong><br>A: Use Complaint form here, MyGate, or call security.</div></div></div>
+  </div>
   </div>
 </div>
 
@@ -278,7 +358,7 @@
 <!-- ================ JAVASCRIPT ================ -->
 <script>
 // ===== FIREBASE =====
-let db=null,auth=null,storage=null,currentUser=null,isAdmin=false;
+let db=null,auth=null,storage=null,currentUser=null,isAdmin=false,residentUser=null;
 if(typeof FIREBASE_CONFIG!=='undefined'&&FIREBASE_ENABLED){try{firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();storage=firebase.storage();auth.onAuthStateChanged(u=>{currentUser=u;isAdmin=u&&u.email===ADMIN_EMAIL;updateUI();if(u&&document.getElementById('bomContent').style.display==='block')unlockBOM();})}catch(e){console.log('Firebase init:',e)}}
 
 // ===== DATA =====
@@ -290,11 +370,11 @@ let members=[],assignments={},notices=[];
 
 // ===== NAVIGATION =====
 function enterBOM(){hideSplash();if(!currentUser)showAuth();else switchTab('bom')}
-function enterResident(){hideSplash();switchTab('resident')}
+function enterResident(){hideSplash();if(!residentUser)showResidentAuth('login');else switchTab('resident')}
 function hideSplash(){const s=document.getElementById('splashScreen');s.classList.add('hidden');document.getElementById('siteHeader').style.display='flex';document.getElementById('mainTabs').style.display='flex';setTimeout(()=>s.style.display='none',800)}
 function goHome(){const s=document.getElementById('splashScreen');s.style.display='flex';s.classList.remove('hidden');document.getElementById('siteHeader').style.display='none';document.getElementById('mainTabs').style.display='none';document.getElementById('bomSubNav').style.display='none';document.getElementById('chatWidget').style.display='none'}
-function switchTab(t){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.getElementById('page_'+t).classList.add('active');const tabMap={bom:'tabBom',resident:'tabResident',policy:'tabPolicy',notices:'tabNotices'};document.getElementById(tabMap[t]).classList.add('active');document.getElementById('bomSubNav').style.display=t==='bom'?'flex':'none';document.getElementById('page_bom').className=t==='bom'?'page has-subnav active':'page';document.getElementById('chatWidget').style.display=t==='resident'?'block':'none';if(t==='bom'){if(currentUser)unlockBOM();else{document.getElementById('bomLocked').style.display='block';document.getElementById('bomContent').style.display='none'}}if(t==='notices')loadNotices();window.scrollTo(0,0)}
-function unlockBOM(){document.getElementById('bomLocked').style.display='none';document.getElementById('bomContent').style.display='block';loadMemDB();buildElectionTable();if(isAdmin){document.getElementById('bn_admin').style.display='';document.getElementById('adminLock').style.display='none';document.getElementById('adminPanel').style.display='block';popAccDrop();loadAdminMsgs();loadAdminProfile()}else{document.getElementById('bn_admin').style.display='none'}}
+function switchTab(t){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.getElementById('page_'+t).classList.add('active');const tabMap={bom:'tabBom',resident:'tabResident',policy:'tabPolicy',notices:'tabNotices'};document.getElementById(tabMap[t]).classList.add('active');document.getElementById('bomSubNav').style.display=t==='bom'?'flex':'none';document.getElementById('page_bom').className=t==='bom'?'page has-subnav active':'page';document.getElementById('chatWidget').style.display=(t==='resident'&&residentUser)?'block':'none';if(t==='bom'){if(currentUser)unlockBOM();else{document.getElementById('bomLocked').style.display='block';document.getElementById('bomContent').style.display='none'}}if(t==='resident'){if(residentUser){unlockResident()}else{document.getElementById('residentLocked').style.display='block';document.getElementById('residentContent').style.display='none'}}if(t==='notices')loadNotices();window.scrollTo(0,0)}
+function unlockBOM(){document.getElementById('bomLocked').style.display='none';document.getElementById('bomContent').style.display='block';loadMemDB();buildElectionTable();if(isAdmin){document.getElementById('bn_admin').style.display='';document.getElementById('adminLock').style.display='none';document.getElementById('adminPanel').style.display='block';popAccDrop();loadAdminMsgs();loadAdminProfile();loadRegRequests();loadApprovedResidents()}else{document.getElementById('bn_admin').style.display='none'}}
 function showBom(s){document.querySelectorAll('.bom-sec').forEach(el=>el.style.display='none');document.querySelectorAll('.sub-nav a').forEach(a=>a.classList.remove('active'));const el=document.getElementById('bs_'+s);if(el)el.style.display='block';const nav=document.getElementById('bn_'+s);if(nav)nav.classList.add('active');if(s==='members')initMemForm();if(s==='allocate')initAlloc();if(s==='dashboard')genDash();if(s==='challenges')buildChallenges();if(s==='committees')buildCommittees();window.scrollTo(0,0)}
 
 // ===== AUTH =====
@@ -305,7 +385,7 @@ function showLoginFm(){document.getElementById('loginForm').style.display='block
 function doLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPassword').value,err=document.getElementById('loginError'),suc=document.getElementById('loginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}if(auth){auth.signInWithEmailAndPassword(e,p).then(()=>{suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');if((u[e]&&u[e]===p)||(e===ADMIN_EMAIL&&p==='admin123')){currentUser={email:e};isAdmin=e===ADMIN_EMAIL;if(!u[e]){u[e]=p;localStorage.setItem('st_users',JSON.stringify(u))}updateUI();suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}else{err.textContent='Invalid. Default admin: suntowershipra@gmail.com / admin123';err.style.display='block'}}}
 function doForgotPw(){const e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');err.style.display='none';suc.style.display='none';if(!e){err.textContent='Enter email';err.style.display='block';return}if(auth){auth.sendPasswordResetEmail(e).then(()=>{suc.textContent='Reset link sent!';suc.style.display='block'}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{suc.textContent='Firebase not configured. Contact admin.';suc.style.display='block'}}
 function toggleAuthBtn(){if(currentUser)doLogout();else showAuth()}
-function doLogout(){if(auth)auth.signOut();currentUser=null;isAdmin=false;updateUI();switchTab('resident')}
+function doLogout(){if(auth)auth.signOut();currentUser=null;isAdmin=false;residentUser=null;localStorage.removeItem('st_resident_user');updateUI();goHome()}
 function updateUI(){const u=document.getElementById('headerUser'),b=document.getElementById('headerAuthBtn');if(currentUser){u.textContent=currentUser.email||'';b.textContent='Logout'}else{u.textContent='';b.textContent='Login'}}
 
 // ===== MEMBERS =====
@@ -352,6 +432,41 @@ function sendChat(){const i=document.getElementById('chatIn'),m=i.value.trim();i
 function toggleRsec(s){document.querySelectorAll('[id^="rs_"]').forEach(el=>el.style.display='none');const el=document.getElementById('rs_'+s);if(el)el.style.display='block'}
 function submitComp(){const d=document.getElementById('cDesc').value.trim();if(!d){alert('Enter description');return}const data={name:document.getElementById('cName').value,flat:document.getElementById('cFlat').value,category:document.getElementById('cCat').value,description:d,status:'Pending',date:new Date().toISOString()};if(db)db.collection('complaints').add(data).then(()=>{document.getElementById('cSuc').textContent='Submitted!';document.getElementById('cSuc').style.display='block'});else{document.getElementById('cSuc').textContent='Submitted! (saved locally)';document.getElementById('cSuc').style.display='block'}}
 
+// ===== RESIDENT AUTH =====
+let pendingOTP={};
+function showResidentAuth(mode){document.getElementById('residentAuthOverlay').classList.remove('hidden');if(mode==='register'){document.getElementById('resLoginForm').style.display='none';document.getElementById('resRegForm').style.display='block';document.getElementById('resForgotForm').style.display='none'}else if(mode==='forgot'){document.getElementById('resLoginForm').style.display='none';document.getElementById('resRegForm').style.display='none';document.getElementById('resForgotForm').style.display='block'}else{document.getElementById('resLoginForm').style.display='block';document.getElementById('resRegForm').style.display='none';document.getElementById('resForgotForm').style.display='none'}}
+function hideResidentAuth(){document.getElementById('residentAuthOverlay').classList.add('hidden')}
+function showResLoginForm(){showResidentAuth('login')}
+function showResRegForm(){showResidentAuth('register')}
+function showResForgotPw(){showResidentAuth('forgot')}
+
+function doResidentLogin(){const e=document.getElementById('resLoginEmail').value.trim(),p=document.getElementById('resLoginPassword').value,err=document.getElementById('resLoginError'),suc=document.getElementById('resLoginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const r=residents.find(x=>x.email.toLowerCase()===e.toLowerCase()&&x.status==='approved');if(!r){err.textContent='Account not found or not yet approved by Admin. Please check email or request registration.';err.style.display='block';return}const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');if(rUsers[e.toLowerCase()]&&rUsers[e.toLowerCase()]===p){residentUser=r;localStorage.setItem('st_resident_user',JSON.stringify(r));suc.textContent='Welcome, '+r.ownerName+'!';suc.style.display='block';setTimeout(()=>{hideResidentAuth();switchTab('resident')},600)}else{err.textContent='Incorrect password. Use Forgot Password to reset.';err.style.display='block'}}
+
+function unlockResident(){document.getElementById('residentLocked').style.display='none';document.getElementById('residentContent').style.display='block';if(residentUser){document.getElementById('residentNameDisplay').textContent=residentUser.ownerName||'';document.getElementById('residentFlatDisplay').textContent=residentUser.flatNo?' | Flat: '+residentUser.flatNo:''}document.getElementById('chatWidget').style.display='block'}
+
+function doResidentLogout(){residentUser=null;localStorage.removeItem('st_resident_user');document.getElementById('residentLocked').style.display='block';document.getElementById('residentContent').style.display='none';document.getElementById('chatWidget').style.display='none'}
+
+function submitResidentReg(){const name=document.getElementById('regOwnerName').value.trim(),flat=document.getElementById('regFlatNo').value.trim(),mob=document.getElementById('regMobile').value.trim(),email=document.getElementById('regEmail').value.trim(),err=document.getElementById('resRegError'),suc=document.getElementById('resRegSuccess');err.style.display='none';suc.style.display='none';if(!name||!flat||!mob||!email){err.textContent='All fields are required';err.style.display='block';return}if(!/\S+@\S+\.\S+/.test(email)){err.textContent='Enter a valid email address';err.style.display='block';return}if(mob.length<10){err.textContent='Enter a valid 10-digit mobile number';err.style.display='block';return}const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const dup=residents.find(x=>x.email.toLowerCase()===email.toLowerCase()||x.flatNo.toUpperCase()===flat.toUpperCase());if(dup){if(dup.status==='approved'){err.textContent='This flat/email is already registered. Please login.';err.style.display='block'}else{err.textContent='A registration request for this flat/email is already pending.';err.style.display='block'}return}const req={id:'REG_'+Date.now(),ownerName:name,flatNo:flat.toUpperCase(),mobile:mob,email:email.toLowerCase(),status:'pending',permissions:{read:true,write:false},requestDate:new Date().toISOString()};residents.push(req);localStorage.setItem('st_residents',JSON.stringify(residents));if(db)db.collection('residents').doc(req.id).set(req).catch(()=>{});suc.textContent='Registration request submitted! Admin will verify and approve your account. You will receive login credentials after approval.';suc.style.display='block';document.getElementById('regOwnerName').value='';document.getElementById('regFlatNo').value='';document.getElementById('regMobile').value='';document.getElementById('regEmail').value=''}
+
+function sendResidentOTP(){const email=document.getElementById('resForgotEmail').value.trim(),err=document.getElementById('resForgotError'),suc=document.getElementById('resForgotSuccess');err.style.display='none';suc.style.display='none';if(!email){err.textContent='Enter your registered email';err.style.display='block';return}const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const r=residents.find(x=>x.email.toLowerCase()===email.toLowerCase()&&x.status==='approved');if(!r){err.textContent='Email not found or account not approved.';err.style.display='block';return}const otp=String(Math.floor(100000+Math.random()*900000));pendingOTP={email:email.toLowerCase(),otp:otp,expires:Date.now()+600000};suc.innerHTML='OTP generated! <strong style="font-size:1.3rem;color:#00695c;letter-spacing:3px">'+otp+'</strong><br><span style="font-size:0.8rem;color:#999">(In production, this OTP will be sent to your email via Firebase/SMTP. Valid for 10 min)</span>';suc.style.display='block';document.getElementById('resForgotStep1').style.display='none';document.getElementById('resForgotStep2').style.display='block'}
+
+function verifyOTPResetPass(){const otp=document.getElementById('resOtpInput').value.trim(),np=document.getElementById('resNewPass').value,cf=document.getElementById('resConfirmPass').value,err=document.getElementById('resForgotError'),suc=document.getElementById('resForgotSuccess');err.style.display='none';suc.style.display='none';if(!otp||!np||!cf){err.textContent='All fields required';err.style.display='block';return}if(np.length<6){err.textContent='Password must be at least 6 characters';err.style.display='block';return}if(np!==cf){err.textContent='Passwords do not match';err.style.display='block';return}if(!pendingOTP.otp||otp!==pendingOTP.otp){err.textContent='Invalid OTP. Please try again.';err.style.display='block';return}if(Date.now()>pendingOTP.expires){err.textContent='OTP expired. Please request a new one.';err.style.display='block';return}const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');rUsers[pendingOTP.email]=np;localStorage.setItem('st_res_users',JSON.stringify(rUsers));pendingOTP={};suc.textContent='Password reset successfully! You can now login with your new password.';suc.style.display='block';document.getElementById('resForgotStep2').style.display='none';document.getElementById('resForgotStep1').style.display='block';document.getElementById('resOtpInput').value='';document.getElementById('resNewPass').value='';document.getElementById('resConfirmPass').value='';setTimeout(()=>showResLoginForm(),2000)}
+
+// ===== ADMIN: RESIDENT MANAGEMENT =====
+function loadRegRequests(){const area=document.getElementById('regRequestsArea');const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const pending=residents.filter(r=>r.status==='pending');if(!pending.length){area.innerHTML='<p style="color:var(--text-light);text-align:center;padding:15px">No pending registration requests.</p>';return}let h='<table><tr><th>Date</th><th>Owner Name</th><th>Flat</th><th>Mobile</th><th>Email</th><th>Read</th><th>Write</th><th>Action</th></tr>';pending.forEach(r=>{const dt=r.requestDate?new Date(r.requestDate).toLocaleDateString():'';h+=`<tr><td>${dt}</td><td><strong>${r.ownerName}</strong></td><td>${r.flatNo}</td><td>${r.mobile}</td><td style="font-size:0.8rem">${r.email}</td><td><input type="checkbox" id="perm_r_${r.id}" checked></td><td><input type="checkbox" id="perm_w_${r.id}"></td><td><button class="btn btn-sm" style="background:#00695c;color:#fff;margin:2px" onclick="approveResident('${r.id}')">Approve</button><button class="btn btn-sm btn-danger" style="margin:2px" onclick="rejectResident('${r.id}')">Reject</button></td></tr>`});h+='</table>';area.innerHTML=h}
+
+function approveResident(id){const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;const readPerm=document.getElementById('perm_r_'+id)?.checked??true;const writePerm=document.getElementById('perm_w_'+id)?.checked??false;residents[idx].status='approved';residents[idx].permissions={read:readPerm,write:writePerm};residents[idx].approvedDate=new Date().toISOString();const tempPass='Sun'+residents[idx].flatNo.replace('-','')+'!';const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');rUsers[residents[idx].email.toLowerCase()]=tempPass;localStorage.setItem('st_res_users',JSON.stringify(rUsers));localStorage.setItem('st_residents',JSON.stringify(residents));if(db)db.collection('residents').doc(id).set(residents[idx],{merge:true}).catch(()=>{});alert('Approved! Temp password for '+residents[idx].ownerName+' ('+residents[idx].email+'):\n\n'+tempPass+'\n\nPlease share this with the resident. They can change it via Forgot Password.');loadRegRequests();loadApprovedResidents()}
+
+function rejectResident(id){if(!confirm('Reject this registration request?'))return;const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;residents.splice(idx,1);localStorage.setItem('st_residents',JSON.stringify(residents));if(db)db.collection('residents').doc(id).delete().catch(()=>{});loadRegRequests()}
+
+function loadApprovedResidents(){const area=document.getElementById('approvedResidentsArea');const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const approved=residents.filter(r=>r.status==='approved');if(!approved.length){area.innerHTML='<p style="color:var(--text-light);text-align:center;padding:15px">No approved residents yet.</p>';return}let h=`<p style="margin-bottom:10px;font-size:0.85rem;color:#666">Total approved: <strong>${approved.length}</strong></p><table><tr><th>Owner Name</th><th>Flat</th><th>Mobile</th><th>Email</th><th>Read</th><th>Write</th><th>Action</th></tr>`;approved.forEach(r=>{h+=`<tr><td><strong>${r.ownerName}</strong></td><td>${r.flatNo}</td><td>${r.mobile}</td><td style="font-size:0.8rem">${r.email}</td><td><input type="checkbox" id="ar_${r.id}" ${r.permissions?.read?'checked':''} onchange="updateResPerms('${r.id}')"></td><td><input type="checkbox" id="aw_${r.id}" ${r.permissions?.write?'checked':''} onchange="updateResPerms('${r.id}')"></td><td><button class="btn btn-sm" style="background:#e65100;color:#fff" onclick="resetResPass('${r.id}')">Reset PW</button> <button class="btn btn-sm btn-danger" onclick="revokeResident('${r.id}')">Revoke</button></td></tr>`});h+='</table>';area.innerHTML=h}
+
+function updateResPerms(id){const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;residents[idx].permissions={read:document.getElementById('ar_'+id)?.checked??true,write:document.getElementById('aw_'+id)?.checked??false};localStorage.setItem('st_residents',JSON.stringify(residents));if(db)db.collection('residents').doc(id).set(residents[idx],{merge:true}).catch(()=>{})}
+
+function resetResPass(id){const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const r=residents.find(x=>x.id===id);if(!r)return;const newPass='Sun'+r.flatNo.replace('-','')+'!';const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');rUsers[r.email.toLowerCase()]=newPass;localStorage.setItem('st_res_users',JSON.stringify(rUsers));alert('Password reset for '+r.ownerName+':\n\nNew temp password: '+newPass+'\n\nShare with the resident.')}
+
+function revokeResident(id){if(!confirm('Revoke access for this resident? They will no longer be able to login.'))return;const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;const email=residents[idx].email.toLowerCase();residents.splice(idx,1);localStorage.setItem('st_residents',JSON.stringify(residents));const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');delete rUsers[email];localStorage.setItem('st_res_users',JSON.stringify(rUsers));if(db)db.collection('residents').doc(id).delete().catch(()=>{});loadApprovedResidents()}
+
 // ===== ADMIN SETTINGS =====
 function changeAdminPass(){const cur=document.getElementById('curPass').value,np=document.getElementById('newPass').value,cf=document.getElementById('cfmPass').value,err=document.getElementById('passErr'),suc=document.getElementById('passSuc');err.style.display='none';suc.style.display='none';if(!cur||!np||!cf){err.textContent='All fields are required';err.style.display='block';return}if(np.length<6){err.textContent='New password must be at least 6 characters';err.style.display='block';return}if(np!==cf){err.textContent='New password and confirmation do not match';err.style.display='block';return}if(auth&&currentUser){const cred=firebase.auth.EmailAuthProvider.credential(currentUser.email,cur);currentUser.reauthenticateWithCredential(cred).then(()=>currentUser.updatePassword(np)).then(()=>{suc.textContent='Password changed successfully!';suc.style.display='block';document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('cfmPass').value=''}).catch(e=>{err.textContent=e.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');const ae=currentUser?currentUser.email:ADMIN_EMAIL;if(u[ae]===cur||cur==='admin123'){u[ae]=np;localStorage.setItem('st_users',JSON.stringify(u));suc.textContent='Password changed successfully! Use new password next login.';suc.style.display='block';document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('cfmPass').value=''}else{err.textContent='Current password is incorrect';err.style.display='block'}}}
 function loadAdminProfile(){const p=JSON.parse(localStorage.getItem('st_admin_profile')||'{}');if(db){db.collection('settings').doc('admin_profile').get().then(d=>{if(d.exists){const data=d.data();document.getElementById('adminEmailField').value=data.email||'';document.getElementById('adminMobile').value=data.mobile||'';document.getElementById('adminDispName').value=data.displayName||''}else fillFromLS()}).catch(()=>fillFromLS())}else fillFromLS();function fillFromLS(){document.getElementById('adminEmailField').value=p.email||ADMIN_EMAIL;document.getElementById('adminMobile').value=p.mobile||'';document.getElementById('adminDispName').value=p.displayName||''}}
@@ -360,6 +475,7 @@ function saveAdminProfile(){const email=document.getElementById('adminEmailField
 // ===== INIT =====
 loadMemLS();
 try{document.getElementById('nDate').value=new Date().toISOString().split('T')[0]}catch(e){}
+try{const sr=localStorage.getItem('st_resident_user');if(sr){residentUser=JSON.parse(sr)}}catch(e){}
 </script>
 </body>
 </html>
