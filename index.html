@@ -90,6 +90,7 @@
       <div class="auth-error" id="resLoginError"></div>
       <div class="auth-success" id="resLoginSuccess"></div>
       <div class="form-group"><label>Email</label><input type="email" class="form-control" id="resLoginEmail" placeholder="your.email@example.com"></div>
+      <div class="form-group"><label>Flat Number</label><input type="text" class="form-control" id="resLoginFlat" placeholder="e.g. STD-701, STC-504" style="text-transform:uppercase"><p style="font-size:0.72rem;color:#999;margin-top:3px">Required for first login on a new device</p></div>
       <div class="form-group"><label>Password</label><input type="password" class="form-control" id="resLoginPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter')doResidentLogin()"></div>
       <button class="btn btn-lg" style="width:100%;background:#00695c;color:#fff" onclick="doResidentLogin()">Login</button>
       <div class="auth-link" onclick="showResForgotPw()">Forgot Password?</div>
@@ -457,15 +458,18 @@ function showResLoginForm(){showResidentAuth('login')}
 function showResRegForm(){showResidentAuth('register')}
 function showResForgotPw(){showResidentAuth('forgot')}
 
-function doResidentLogin(){const e=document.getElementById('resLoginEmail').value.trim(),p=document.getElementById('resLoginPassword').value,err=document.getElementById('resLoginError'),suc=document.getElementById('resLoginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}
+function doResidentLogin(){const e=document.getElementById('resLoginEmail').value.trim(),p=document.getElementById('resLoginPassword').value,flat=document.getElementById('resLoginFlat').value.trim().toUpperCase(),err=document.getElementById('resLoginError'),suc=document.getElementById('resLoginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}
 /* Try local residents list */
 const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');let r=residents.find(x=>x.email.toLowerCase()===e.toLowerCase()&&x.status==='approved');
-/* Check password */
 const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');const storedPass=rUsers[e.toLowerCase()];
+/* Case 1: Resident found locally */
 if(r){const defaultPass='Sun'+r.flatNo.replace('-','')+'!';const tempPass=r.tempPass||defaultPass;if((storedPass&&storedPass===p)||p===tempPass||p===defaultPass){rUsers[e.toLowerCase()]=p;localStorage.setItem('st_res_users',JSON.stringify(rUsers));residentUser=r;localStorage.setItem('st_resident_user',JSON.stringify(r));suc.textContent='Welcome, '+r.ownerName+'!';suc.style.display='block';setTimeout(()=>{hideResidentAuth();switchTab('resident')},600)}else{err.textContent='Incorrect password. Use Forgot Password to reset.';err.style.display='block'}return}
-/* Cross-browser: resident not in this browser's localStorage. Accept Sun+flat+! pattern (with or without dash). */
-const cleanP=p.replace(/[-_\s]/g,'');const flatMatch=cleanP.match(/^Sun([A-Z]{2,4}\d{3,4})!$/i);if(flatMatch){const flatRaw=flatMatch[1].toUpperCase();const flat3=flatRaw.replace(/^([A-Z]+)(\d+)$/,'$1-$2');r={id:'REG_CROSS_'+Date.now(),ownerName:e.split('@')[0].replace(/[._]/g,' '),flatNo:flat3,mobile:'',email:e.toLowerCase(),status:'approved',permissions:{read:true,write:false},approvedDate:new Date().toISOString(),tempPass:cleanP};residents.push(r);localStorage.setItem('st_residents',JSON.stringify(residents));rUsers[e.toLowerCase()]=cleanP;localStorage.setItem('st_res_users',JSON.stringify(rUsers));residentUser=r;localStorage.setItem('st_resident_user',JSON.stringify(r));suc.textContent='Welcome! Logged in successfully.';suc.style.display='block';setTimeout(()=>{hideResidentAuth();switchTab('resident')},600);return}
-err.textContent='Account not found. Please login with the password shared by your Admin, or click "Request Registration" to register.';err.style.display='block'}
+/* Case 2: Not found locally — need flat number for cross-browser login */
+if(!flat){err.textContent='First time on this device? Please enter your Flat Number (e.g. STD-701) along with your password to login.';err.style.display='block';return}
+/* Normalize flat: add dash if missing (STD701 → STD-701) */
+let normFlat=flat;if(/^[A-Z]{2,4}\d{3,4}$/.test(flat)){normFlat=flat.replace(/^([A-Z]+)(\d+)$/,'$1-$2')}
+const expectedPass='Sun'+normFlat.replace('-','')+'!';
+if(p===expectedPass||p===storedPass){r={id:'REG_CROSS_'+Date.now(),ownerName:e.split('@')[0].replace(/[._]/g,' '),flatNo:normFlat,mobile:'',email:e.toLowerCase(),status:'approved',permissions:{read:true,write:false},approvedDate:new Date().toISOString(),tempPass:expectedPass};residents.push(r);localStorage.setItem('st_residents',JSON.stringify(residents));rUsers[e.toLowerCase()]=p;localStorage.setItem('st_res_users',JSON.stringify(rUsers));residentUser=r;localStorage.setItem('st_resident_user',JSON.stringify(r));suc.textContent='Welcome! Logged in successfully.';suc.style.display='block';setTimeout(()=>{hideResidentAuth();switchTab('resident')},600)}else{err.textContent='Incorrect password. Please use the password shared by your Admin.';err.style.display='block'}}
 
 function unlockResident(){document.getElementById('residentLocked').style.display='none';document.getElementById('residentContent').style.display='block';if(residentUser){document.getElementById('residentNameDisplay').textContent=residentUser.ownerName||'';document.getElementById('residentFlatDisplay').textContent=residentUser.flatNo?' | Flat: '+residentUser.flatNo:''}document.getElementById('chatWidget').style.display='block'}
 
