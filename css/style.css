@@ -67,6 +67,7 @@ a:hover { text-decoration: underline; }
 
 /* ========== SUB NAVIGATION (BOM Internal) ========== */
 .sub-nav { position: fixed; top: 92px; left: 0; right: 0; z-index: 999; background: #e8eaf6; padding: 6px 20px; display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+@media (max-width: 768px) { .sub-nav { position: fixed; top: auto; top: 82px; padding: 4px 8px; } }
 .sub-nav a { color: var(--primary); text-decoration: none; padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; transition: 0.2s; background: rgba(26,35,126,0.08); }
 .sub-nav a:hover, .sub-nav a.active { background: var(--primary); color: #fff; text-decoration: none; }
 
@@ -281,10 +282,72 @@ select.form-control { appearance: auto; }
 }
 
 /* ========== RESPONSIVE ========== */
-@media (max-width: 600px) {
-  .splash-title { font-size: 1.6rem; }
-  .splash-buttons { flex-direction: column; align-items: center; }
-  .main-tab { padding: 8px 12px; font-size: 0.75rem; }
-  .page-title { font-size: 1.3rem; }
-  .chatbot-panel { width: calc(100% - 40px); right: 20px; bottom: 80px; }
+@media (max-width: 768px) {
+  .splash-title { font-size: 1.8rem; }
+  .splash-subtitle { font-size: 0.95rem; }
+  .splash-btn { padding: 12px 28px; font-size: 0.9rem; }
+  .main-tabs { flex-wrap: wrap; gap: 0; }
+  .main-tab { padding: 8px 10px; font-size: 0.73rem; flex: 1 1 auto; text-align: center; justify-content: center; min-width: 0; }
+  .main-tab .lock-icon { display: none; }
+  .sub-nav { top: auto; position: relative; padding: 6px 8px; gap: 2px; }
+  .sub-nav a { padding: 4px 7px; font-size: 0.68rem; }
+  .page { padding: 90px 12px 30px; }
+  .page.has-subnav { padding-top: 100px; }
+  .page-title { font-size: 1.2rem; }
+  .page-subtitle { font-size: 0.85rem; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 12px; }
+  .feature-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .feature-card { padding: 14px 10px; }
+  .feature-icon { font-size: 2rem; margin-bottom: 6px; }
+  .feature-card h4 { font-size: 0.85rem; }
+  .feature-card p { font-size: 0.72rem; }
+  .notice-grid { grid-template-columns: 1fr; gap: 12px; }
+  .notice-filter { gap: 4px; }
+  .notice-filter-btn { padding: 5px 10px; font-size: 0.72rem; }
+  table { font-size: 0.78rem; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th, td { padding: 6px 5px; white-space: nowrap; }
+  .card { padding: 14px; margin-bottom: 12px; }
+  .card h3 { font-size: 1rem; }
+  .btn { padding: 8px 16px; font-size: 0.82rem; }
+  .btn-lg { padding: 12px 24px; font-size: 0.9rem; }
+  .action-bar { gap: 6px; }
+  .auth-card { padding: 25px 18px; width: 95%; }
+  .form-control { padding: 9px 10px; font-size: 0.85rem; }
+  .member-form { grid-template-columns: 1fr; }
+  .member-card { padding: 12px; }
+  .committee-card { padding: 14px; }
+  .comm-member-slot { flex-wrap: wrap; gap: 4px; }
+  .summary-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .summary-card .name { font-size: 0.9rem; }
+  .summary-card .task-count { font-size: 1.5rem; }
+  .task-row { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+  .task-row select { min-width: 120px; width: 100%; }
+  .chatbot-panel { width: calc(100% - 20px); right: 10px; bottom: 75px; }
+  .chatbot-btn { width: 48px; height: 48px; font-size: 1.2rem; }
+  .modal-content { width: 96%; border-radius: 8px; }
+  .modal-body { padding: 12px; }
+  .site-header { padding: 4px 10px; height: 44px; }
+  .site-header .header-title { font-size: 0.78rem; }
+  .site-header .header-sub { font-size: 0.58rem; }
+  .header-user { font-size: 0.68rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .header-btn { padding: 3px 8px; font-size: 0.68rem; }
+  .admin-section { padding: 14px; }
+  .process-flow { flex-direction: column; align-items: center; }
+  .process-arrow { transform: rotate(90deg); }
+  .threshold-card { margin-bottom: 8px; }
+  .contact-card { padding: 10px; gap: 8px; }
+  .timeline { padding-left: 20px; }
+  .formula-box { padding: 14px; }
+  .legal-box { padding: 14px; }
+}
+@media (max-width: 400px) {
+  .splash-title { font-size: 1.4rem; }
+  .splash-logo { width: 100px; height: 100px; border-radius: 18px; }
+  .splash-logo svg { width: 70px; height: 70px; }
+  .splash-btn { padding: 10px 20px; font-size: 0.85rem; }
+  .main-tab { padding: 6px 6px; font-size: 0.65rem; }
+  .feature-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .feature-card { padding: 10px 6px; }
+  .feature-icon { font-size: 1.6rem; }
+  .summary-grid { grid-template-columns: 1fr; }
 }
