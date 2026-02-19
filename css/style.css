@@ -351,3 +351,9 @@ select.form-control { appearance: auto; }
   .feature-icon { font-size: 1.6rem; }
   .summary-grid { grid-template-columns: 1fr; }
 }
+/* Project Management - Expense & Approval styles */
+details summary { list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::before { content: '+ '; font-weight: 700; }
+details[open] summary::before { content: '- '; }
+details[open] summary { margin-bottom: 8px; }
