@@ -399,6 +399,58 @@ details summary::before { content: '+ '; font-weight: 700; }
 details[open] summary::before { content: '- '; }
 details[open] summary { margin-bottom: 8px; }
 
+/* ========== ACCOUNT MANAGEMENT DASHBOARD ========== */
+.acct-success-card { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 2px solid #4caf50; border-radius: 12px; padding: 20px; margin: 16px 0; animation: acctSlideIn 0.4s ease-out; }
+@keyframes acctSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.acct-success-card h4 { color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.acct-success-detail { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 0.88rem; margin-bottom: 14px; }
+.acct-success-detail dt { font-weight: 600; color: #37474f; }
+.acct-success-detail dd { color: #212121; margin: 0; }
+.acct-copy-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+.acct-copy-btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+.acct-copy-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.acct-copy-btn-cred { background: #1a237e; color: #fff; }
+.acct-copy-btn-wp { background: #25d366; color: #fff; }
+.acct-copy-btn-dismiss { background: #e0e0e0; color: #616161; }
+.acct-list-section { margin-top: 20px; }
+.acct-list-section h4 { color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+.acct-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.acct-table th { background: var(--primary); color: #fff; padding: 10px 8px; text-align: left; font-size: 0.8rem; }
+.acct-table td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.acct-table tr:nth-child(even) { background: #f9f9f9; }
+.acct-table tr:hover { background: #e8eaf6; }
+.acct-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; }
+.acct-status-active { background: #e8f5e9; color: #2e7d32; }
+.acct-status-never { background: #fff3e0; color: #e65100; }
+.acct-status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.acct-status-active .acct-status-dot { background: #2e7d32; }
+.acct-status-never .acct-status-dot { background: #e65100; }
+.acct-pw-reveal { background: #f5f5f5; padding: 3px 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: 700; font-size: 0.82rem; color: var(--primary); cursor: pointer; border: 1px solid #e0e0e0; }
+.acct-pw-reveal:hover { background: #e8eaf6; }
+.acct-empty { text-align: center; padding: 30px 20px; color: var(--text-light); }
+.acct-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+.acct-summary-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.acct-summary-item { background: #fff; border-radius: 8px; padding: 12px; text-align: center; box-shadow: var(--shadow); border-top: 3px solid var(--primary); }
+.acct-summary-item .acct-sum-val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+.acct-summary-item .acct-sum-lbl { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+@media (max-width: 768px) {
+  .acct-summary-bar { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .acct-summary-item { padding: 10px 6px; }
+  .acct-summary-item .acct-sum-val { font-size: 1.2rem; }
+  .acct-summary-item .acct-sum-lbl { font-size: 0.68rem; }
+  .acct-success-card { padding: 14px; }
+  .acct-success-detail { font-size: 0.82rem; }
+  .acct-copy-bar { flex-direction: column; }
+  .acct-copy-btn { width: 100%; justify-content: center; min-height: 44px; }
+  .acct-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .acct-table th, .acct-table td { white-space: nowrap; padding: 6px 5px; font-size: 0.78rem; }
+}
+@media (max-width: 480px) {
+  .acct-summary-bar { grid-template-columns: 1fr; gap: 6px; }
+  .acct-success-detail { grid-template-columns: 1fr; gap: 4px 0; }
+  .acct-success-detail dt { margin-top: 6px; }
+}
+
 /* ========== PROJECT DASHBOARD UI OVERHAUL ========== */
 .proj-stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .proj-stat-card { background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: var(--shadow); border-top: 3px solid var(--primary); }
