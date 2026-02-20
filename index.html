@@ -6,13 +6,13 @@
 <title>Sun Tower RWA - Residents Welfare Association</title>
 <meta name="description" content="Sun Tower Residents Welfare Association, Shipra Sun City, Indirapuram, Ghaziabad">
 <link rel="stylesheet" href="css/style.css">
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-<script src="js/firebase-config.js"></script>
+<!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
+<!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
+<script src="js/audit.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/data.js"></script>
 </head>
 <body>
 
@@ -271,6 +271,9 @@
           <div id="approvedResidentsArea"><p style="color:var(--text-light)">Loading...</p></div>
         </div>
         <div class="admin-section"><h3>&#128172; Resident Messages</h3><div id="adminMsgs"><p style="color:var(--text-light)">Loading...</p></div></div>
+        <div class="admin-section" style="border-color:#b71c1c;background:#fce4ec"><h3 style="color:#b71c1c;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128270; Security Audit Log <button class="btn btn-sm" style="background:#b71c1c;color:#fff;font-size:0.75rem" onclick="SunAudit.buildAuditViewer('auditLogArea')">&#8635; Load Audit Log</button></h3>
+          <div id="auditLogArea"><p style="color:#999;text-align:center;padding:15px">Click "Load Audit Log" to view security events.</p></div>
+        </div>
         <div class="admin-section" style="border-color:#1a237e;background:#e8eaf6"><h3 style="color:var(--primary)">&#9881; Admin Settings</h3>
           <div class="grid-2">
             <div style="background:#fff;padding:15px;border-radius:10px">
@@ -375,11 +378,49 @@
   </div>
 </div>
 
+<!-- SESSION EXPIRED OVERLAY -->
+<div class="session-expired-overlay hidden" id="sessionExpiredOverlay">
+  <div class="session-expired-card">
+    <div class="session-expired-icon">&#128274;</div>
+    <h2>Session Expired</h2>
+    <p>Your session has timed out for security. Please login again to continue.</p>
+    <button class="btn btn-primary btn-lg" onclick="window.location.reload()">Login Again</button>
+  </div>
+</div>
+
 <!-- ================ JAVASCRIPT ================ -->
 <script>
-// ===== FIREBASE =====
+// ===== AUTH STATE (Supabase-backed) =====
 let db=null,auth=null,storage=null,currentUser=null,isAdmin=false,residentUser=null;
-if(typeof FIREBASE_CONFIG!=='undefined'&&FIREBASE_ENABLED){try{firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();db=firebase.firestore();storage=firebase.storage();auth.onAuthStateChanged(u=>{currentUser=u;isAdmin=u&&u.email===ADMIN_EMAIL;updateUI();if(u&&document.getElementById('bomContent').style.display==='block')unlockBOM();})}catch(e){console.log('Firebase init:',e)}}
+// Firebase disabled — all auth via Supabase Auth (see js/auth.js)
+// Initialize Supabase Auth listener
+SunAuth.init(function(state) {
+  console.log('Auth state:', state.event, state.role);
+  if (state.event === 'SIGNED_IN' || state.event === 'RESTORED' || state.event === 'TOKEN_REFRESHED') {
+    currentUser = state.user ? { email: state.user.email, id: state.user.id } : null;
+    isAdmin = state.role === 'admin';
+    // Check if resident
+    if (state.role === 'resident') {
+      residentUser = state.profile ? {
+        ownerName: state.profile.display_name || state.user.email,
+        flatNo: state.profile.flat_no || '',
+        email: state.user.email,
+        status: 'approved'
+      } : null;
+    }
+    updateUI();
+    // Auto-navigate if on BOM page
+    if (state.role === 'admin' || state.role === 'bom') {
+      if (document.getElementById('bomContent').style.display==='block') unlockBOM();
+    }
+  } else if (state.event === 'SIGNED_OUT') {
+    currentUser = null; isAdmin = false; residentUser = null;
+    updateUI();
+  } else if (state.event === 'SESSION_EXPIRED') {
+    currentUser = null; isAdmin = false; residentUser = null;
+    updateUI();
+  }
+});
 
 // ===== DATA =====
 const EM=[{name:'Sh. Lakhmi Chand',flat:'STB-304',v:129},{name:'Sh. Sunil Kumar',flat:'STD-701',v:128},{name:'Sh. Santosh Kr. Srivastava',flat:'STC-104',v:123},{name:'Sh. Himanshu Chaudhary',flat:'STC-502',v:117},{name:'Sh. Mahesh Chand Gupta',flat:'STD-901',v:115},{name:'Sh. Biman Saha',flat:'STC-805',v:113},{name:'Sh. Raj Kumar Rana',flat:'STC-504',v:107},{name:'Sh. Laxman Singh Pangtey',flat:'STC-603',v:106},{name:'Sh. Rajeev Mehta',flat:'STC-902',v:106},{name:'Sh. Harendra Singh',flat:'STD-906',v:105}];
@@ -414,11 +455,22 @@ function showAuth(){document.getElementById('authOverlay').classList.remove('hid
 function hideAuth(){document.getElementById('authOverlay').classList.add('hidden')}
 function showForgotPw(){document.getElementById('loginForm').style.display='none';document.getElementById('forgotForm').style.display='block'}
 function showLoginFm(){document.getElementById('loginForm').style.display='block';document.getElementById('forgotForm').style.display='none'}
-function doLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPassword').value,err=document.getElementById('loginError'),suc=document.getElementById('loginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}if(auth){auth.signInWithEmailAndPassword(e,p).then(()=>{localStorage.setItem('st_bom_session',JSON.stringify({email:e}));supaSync('st_bom_session');suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');if((u[e]&&u[e]===p)||(e===ADMIN_EMAIL&&p==='admin123')){currentUser={email:e};isAdmin=e===ADMIN_EMAIL;if(!u[e]){u[e]=p;localStorage.setItem('st_users',JSON.stringify(u));supaSync('st_users')}localStorage.setItem('st_bom_session',JSON.stringify({email:e}));supaSync('st_bom_session');trackBOMLogin();updateUI();suc.textContent='Success!';suc.style.display='block';setTimeout(()=>{hideAuth();switchTab('bom')},500)}else{err.textContent='Invalid email or password. Please try again or use Forgot Password.';err.style.display='block'}}}
-function doForgotPw(){const e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');err.style.display='none';suc.style.display='none';if(!e){err.textContent='Enter email';err.style.display='block';return}if(auth){auth.sendPasswordResetEmail(e).then(()=>{suc.textContent='Reset link sent!';suc.style.display='block'}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{suc.textContent='Firebase not configured. Contact admin.';suc.style.display='block'}}
+async function doLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPassword').value,err=document.getElementById('loginError'),suc=document.getElementById('loginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}
+// Supabase Auth login
+const result=await SunAuth.login(e,p);
+if(result.error){err.textContent=result.error.message||'Invalid email or password';err.style.display='block';return}
+currentUser={email:result.data.user.email,id:result.data.user.id};
+isAdmin=result.data.role==='admin';
+trackBOMLogin();updateUI();
+suc.textContent='Success!';suc.style.display='block';
+setTimeout(()=>{hideAuth();switchTab('bom')},500)}
+async function doForgotPw(){const e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');err.style.display='none';suc.style.display='none';if(!e){err.textContent='Enter email';err.style.display='block';return}
+const result=await SunAuth.resetPassword(e);
+if(result.error){err.textContent=result.error.message;err.style.display='block'}
+else{suc.textContent='Reset link sent to your email!';suc.style.display='block'}}
 function toggleAuthBtn(){if(currentUser)doLogout();else showAuth()}
-function doLogout(){if(auth)auth.signOut();currentUser=null;isAdmin=false;residentUser=null;localStorage.removeItem('st_resident_user');localStorage.removeItem('st_bom_session');updateUI();goHome()}
-function updateUI(){const u=document.getElementById('headerUser'),b=document.getElementById('headerAuthBtn');if(currentUser){u.textContent=currentUser.email||'';b.textContent='Logout'}else{u.textContent='';b.textContent='Login'}}
+async function doLogout(){await SunAuth.logout();currentUser=null;isAdmin=false;residentUser=null;updateUI();goHome()}
+function updateUI(){const u=document.getElementById('headerUser'),b=document.getElementById('headerAuthBtn');if(currentUser){const role=SunAuth.getRole();const roleBadge=role==='admin'?'<span class="role-badge role-badge-admin">ADMIN</span>':role==='bom'?'<span class="role-badge role-badge-bom">BOM</span>':role==='resident'?'<span class="role-badge role-badge-resident">RESIDENT</span>':'';u.innerHTML=(currentUser.email||'')+' '+roleBadge;b.textContent='Logout'}else{u.innerHTML='';b.textContent='Login'}}
 
 // ===== MEMBERS =====
 function loadMemDB(){if(db){db.collection('members').orderBy('rank').get().then(s=>{if(!s.empty){members=s.docs.map(d=>d.data());updatePosBadges()}else loadMemLS()}).catch(()=>loadMemLS())}else loadMemLS()}
@@ -449,7 +501,28 @@ function exportCSV(){const vm=members.filter(m=>m&&m.name);let csv='ID,Category,
 
 // ===== ADMIN =====
 function popAccDrop(){const s=document.getElementById('accName');if(!s)return;s.innerHTML='<option value="">--</option>';EM.forEach(m=>{s.innerHTML+=`<option>${m.name} (${m.flat})</option>`})}
-function createAccount(){const e=document.getElementById('accEmail').value.trim(),p=document.getElementById('accPass').value,n=document.getElementById('accName').value,err=document.getElementById('accErr'),scArea=document.getElementById('accSuccessCard');err.style.display='none';scArea.innerHTML='';if(!e||!p||p.length<6){err.textContent='Valid email & password (6+ chars) required';err.style.display='block';return}if(auth){const ae=currentUser.email;auth.createUserWithEmailAndPassword(e,p).then(()=>{saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p);return auth.signInWithEmailAndPassword(ae,document.getElementById('loginPassword')?.value||'admin123')}).catch(x=>{err.textContent=x.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');u[e]=p;localStorage.setItem('st_users',JSON.stringify(u));supaSync('st_users');saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p)}}
+async function createAccount(){const e=document.getElementById('accEmail').value.trim(),p=document.getElementById('accPass').value,n=document.getElementById('accName').value,err=document.getElementById('accErr'),scArea=document.getElementById('accSuccessCard');err.style.display='none';scArea.innerHTML='';if(!e||!p||p.length<6){err.textContent='Valid email & password (6+ chars) required';err.style.display='block';return}
+// Create BOM account via Supabase (admin creates user via Edge Function or direct)
+try{
+  const session=await supa.auth.getSession();
+  const token=session.data.session?.access_token;
+  // Try Edge Function first (preferred — uses service_role)
+  const resp=await fetch(SUPABASE_URL+'/functions/v1/approve-resident',{
+    method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({request_id:null,create_bom:true,email:e,password:p,name:n,role:'bom'})
+  }).catch(()=>null);
+  if(resp&&resp.ok){
+    const result=await resp.json();
+    saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p);
+    SunAudit.log('create_account','account',null,{email:e,name:n,role:'bom'});
+  }else{
+    // Fallback: store in localStorage + KV (legacy mode)
+    const u=JSON.parse(localStorage.getItem('st_users')||'{}');u[e]=p;
+    localStorage.setItem('st_users',JSON.stringify(u));supaSync('st_users');
+    saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p);
+    SunAudit.log('create_account','account',null,{email:e,name:n,role:'bom',mode:'legacy'});
+  }
+}catch(x){err.textContent=x.message||'Account creation failed';err.style.display='block'}}
 function saveBOMAcctMeta(name,email,pass){const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const dup=accts.find(a=>a.email.toLowerCase()===email.toLowerCase());if(dup){dup.name=name||dup.name;dup.password=pass;dup.updatedAt=new Date().toISOString();dup.lastReset=new Date().toISOString()}else{const flat=(name.match(/\(([^)]+)\)/)||[])[1]||'';accts.push({id:'BOM_'+Date.now(),name:name,email:email.toLowerCase(),password:pass,flat:flat,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),lastLogin:null,status:'never'})}localStorage.setItem('st_bom_accounts',JSON.stringify(accts));supaSync('st_bom_accounts');buildAccountList()}
 function showAcctSuccessCard(name,email,pass){const area=document.getElementById('accSuccessCard');const dispName=name||email;const credText=`BOM Portal Login\nName: ${dispName}\nEmail: ${email}\nPassword: ${pass}\nURL: https://suntower.in`;const wpText=encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${dispName},\n\nYour BOM account has been created:\n📧 Email: ${email}\n🔑 Password: ${pass}\n🔗 URL: https://suntower.in\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);area.innerHTML=`<div class="acct-success-card"><h4>&#9989; Account Created Successfully</h4><dl class="acct-success-detail"><dt>Member</dt><dd><strong>${dispName}</strong></dd><dt>Email</dt><dd>${email}</dd><dt>Password</dt><dd><code style="background:#fff;padding:2px 8px;border-radius:4px;font-weight:700;color:#1a237e">${pass}</code></dd></dl><div class="acct-copy-bar"><button class="acct-copy-btn acct-copy-btn-cred" onclick="copyAcctCred('${credText.replace(/'/g,"\\'")}')">&#128203; Copy Credentials</button><button class="acct-copy-btn acct-copy-btn-wp" onclick="window.open('https://wa.me/?text=${wpText}','_blank')">&#128172; Share via WhatsApp</button><button class="acct-copy-btn acct-copy-btn-dismiss" onclick="this.closest('.acct-success-card').remove()">&#10005; Dismiss</button></div></div>`;document.getElementById('accEmail').value='';document.getElementById('accPass').value='';document.getElementById('accName').selectedIndex=0}
 function copyAcctCred(text){navigator.clipboard.writeText(text.replace(/\\n/g,'\n')).then(()=>{const btns=document.querySelectorAll('.acct-copy-btn-cred');btns.forEach(b=>{b.textContent='✓ Copied!';setTimeout(()=>{b.innerHTML='&#128203; Copy Credentials'},2000)})}).catch(()=>{prompt('Copy credentials:',text.replace(/\\n/g,'\n'))})}
@@ -486,33 +559,86 @@ function showResLoginForm(){showResidentAuth('login')}
 function showResRegForm(){showResidentAuth('register')}
 function showResForgotPw(){showResidentAuth('forgot')}
 
-function doResidentLogin(){const e=document.getElementById('resLoginEmail').value.trim(),p=document.getElementById('resLoginPassword').value,flat=document.getElementById('resLoginFlat').value.trim().toUpperCase(),err=document.getElementById('resLoginError'),suc=document.getElementById('resLoginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}
-/* Try local residents list */
-const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');let r=residents.find(x=>x.email.toLowerCase()===e.toLowerCase()&&x.status==='approved');
-const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');const storedPass=rUsers[e.toLowerCase()];
-/* Case 1: Resident found locally */
-if(r){const defaultPass='Sun'+r.flatNo.replace('-','')+'!';const tempPass=r.tempPass||defaultPass;if((storedPass&&storedPass===p)||p===tempPass||p===defaultPass){rUsers[e.toLowerCase()]=p;localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');residentUser=r;localStorage.setItem('st_resident_user',JSON.stringify(r));suc.textContent='Welcome, '+r.ownerName+'!';suc.style.display='block';setTimeout(()=>{hideResidentAuth();switchTab('resident')},600)}else{err.textContent='Incorrect password. Use Forgot Password to reset.';err.style.display='block'}return}
-/* Case 2: Not found locally — need flat number for cross-browser login */
-if(!flat){err.textContent='First time on this device? Please enter your Flat Number (e.g. STD-701) along with your password to login.';err.style.display='block';return}
-/* Normalize flat: add dash if missing (STD701 → STD-701) */
-let normFlat=flat;if(/^[A-Z]{2,4}\d{3,4}$/.test(flat)){normFlat=flat.replace(/^([A-Z]+)(\d+)$/,'$1-$2')}
-const expectedPass='Sun'+normFlat.replace('-','')+'!';
-if(p===expectedPass||p===storedPass){r={id:'REG_CROSS_'+Date.now(),ownerName:e.split('@')[0].replace(/[._]/g,' '),flatNo:normFlat,mobile:'',email:e.toLowerCase(),status:'approved',permissions:{read:true,write:false},approvedDate:new Date().toISOString(),tempPass:expectedPass};residents.push(r);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');rUsers[e.toLowerCase()]=p;localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');residentUser=r;localStorage.setItem('st_resident_user',JSON.stringify(r));suc.textContent='Welcome! Logged in successfully.';suc.style.display='block';setTimeout(()=>{hideResidentAuth();switchTab('resident')},600)}else{err.textContent='Incorrect password. Please use the password shared by your Admin.';err.style.display='block'}}
+async function doResidentLogin(){const e=document.getElementById('resLoginEmail').value.trim(),p=document.getElementById('resLoginPassword').value,flat=document.getElementById('resLoginFlat').value.trim().toUpperCase(),err=document.getElementById('resLoginError'),suc=document.getElementById('resLoginSuccess');err.style.display='none';suc.style.display='none';if(!e||!p){err.textContent='Enter email and password';err.style.display='block';return}
+// Supabase Auth login (same auth system for all roles)
+const result=await SunAuth.login(e,p);
+if(result.error){err.textContent=result.error.message||'Invalid email or password. Contact admin if you need access.';err.style.display='block';return}
+const profile=result.data.profile;
+if(!profile||profile.role==='admin'||profile.role==='bom'){
+  // This is a BOM/admin account, redirect to BOM portal
+  currentUser={email:result.data.user.email,id:result.data.user.id};
+  isAdmin=result.data.role==='admin';
+  suc.textContent='Redirecting to BOM Portal...';suc.style.display='block';
+  setTimeout(()=>{hideResidentAuth();switchTab('bom')},600);return}
+// Resident login
+residentUser={ownerName:profile.display_name||e.split('@')[0],flatNo:profile.flat_no||flat||'',email:e.toLowerCase(),status:'approved',permissions:profile.committees?{read:true,write:true}:{read:true,write:false}};
+currentUser={email:result.data.user.email,id:result.data.user.id};
+suc.textContent='Welcome, '+(profile.display_name||'Resident')+'!';suc.style.display='block';
+setTimeout(()=>{hideResidentAuth();switchTab('resident')},600)}
 
 function unlockResident(){document.getElementById('residentLocked').style.display='none';document.getElementById('residentContent').style.display='block';if(residentUser){document.getElementById('residentNameDisplay').textContent=residentUser.ownerName||'';document.getElementById('residentFlatDisplay').textContent=residentUser.flatNo?' | Flat: '+residentUser.flatNo:''}document.getElementById('chatWidget').style.display='block'}
 
 function doResidentLogout(){residentUser=null;localStorage.removeItem('st_resident_user');document.getElementById('residentLocked').style.display='block';document.getElementById('residentContent').style.display='none';document.getElementById('chatWidget').style.display='none'}
 
-function submitResidentReg(){const name=document.getElementById('regOwnerName').value.trim(),flat=document.getElementById('regFlatNo').value.trim(),mob=document.getElementById('regMobile').value.trim(),email=document.getElementById('regEmail').value.trim(),err=document.getElementById('resRegError'),suc=document.getElementById('resRegSuccess');err.style.display='none';suc.style.display='none';if(!name||!flat||!mob||!email){err.textContent='All fields are required';err.style.display='block';return}if(!/\S+@\S+\.\S+/.test(email)){err.textContent='Enter a valid email address';err.style.display='block';return}if(mob.length<10){err.textContent='Enter a valid 10-digit mobile number';err.style.display='block';return}const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const dup=residents.find(x=>x.email.toLowerCase()===email.toLowerCase()||x.flatNo.toUpperCase()===flat.toUpperCase());if(dup){if(dup.status==='approved'){err.textContent='This flat/email is already registered. Please login.';err.style.display='block'}else{err.textContent='A registration request for this flat/email is already pending.';err.style.display='block'}return}const req={id:'REG_'+Date.now(),ownerName:name,flatNo:flat.toUpperCase(),mobile:mob,email:email.toLowerCase(),status:'pending',permissions:{read:true,write:false},requestDate:new Date().toISOString()};residents.push(req);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');if(db)db.collection('residents').doc(req.id).set(req).catch(()=>{});suc.textContent='Registration request submitted! Admin will verify and approve your account. You will receive login credentials after approval.';suc.style.display='block';document.getElementById('regOwnerName').value='';document.getElementById('regFlatNo').value='';document.getElementById('regMobile').value='';document.getElementById('regEmail').value=''}
+async function submitResidentReg(){const name=document.getElementById('regOwnerName').value.trim(),flat=document.getElementById('regFlatNo').value.trim(),mob=document.getElementById('regMobile').value.trim(),email=document.getElementById('regEmail').value.trim(),err=document.getElementById('resRegError'),suc=document.getElementById('resRegSuccess');err.style.display='none';suc.style.display='none';if(!name||!flat||!mob||!email){err.textContent='All fields are required';err.style.display='block';return}if(!/\S+@\S+\.\S+/.test(email)){err.textContent='Enter a valid email address';err.style.display='block';return}if(mob.length<10){err.textContent='Enter a valid 10-digit mobile number';err.style.display='block';return}
+// Submit to Supabase registration_requests table
+const result=await SunData.submitRegistration({ownerName:name,flatNo:flat.toUpperCase(),mobile:mob,email:email});
+if(result.error){
+  if(result.error.message&&result.error.message.includes('duplicate')){
+    err.textContent='This flat/email is already registered.';err.style.display='block';
+  }else{
+    // Fallback to legacy localStorage
+    const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');
+    const req={id:'REG_'+Date.now(),ownerName:name,flatNo:flat.toUpperCase(),mobile:mob,email:email.toLowerCase(),status:'pending',permissions:{read:true,write:false},requestDate:new Date().toISOString()};
+    residents.push(req);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');
+    suc.textContent='Registration submitted! Admin will verify and approve your account.';suc.style.display='block';
+  }
+}else{
+  suc.textContent='Registration request submitted! Admin will verify and approve your account. You will receive login credentials after approval.';suc.style.display='block';
+}
+document.getElementById('regOwnerName').value='';document.getElementById('regFlatNo').value='';document.getElementById('regMobile').value='';document.getElementById('regEmail').value=''}
 
-function sendResidentOTP(){const email=document.getElementById('resForgotEmail').value.trim(),err=document.getElementById('resForgotError'),suc=document.getElementById('resForgotSuccess');err.style.display='none';suc.style.display='none';if(!email){err.textContent='Enter your registered email';err.style.display='block';return}const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const r=residents.find(x=>x.email.toLowerCase()===email.toLowerCase()&&x.status==='approved');if(!r){err.textContent='Email not found or account not approved.';err.style.display='block';return}const otp=String(Math.floor(100000+Math.random()*900000));pendingOTP={email:email.toLowerCase(),otp:otp,expires:Date.now()+600000};suc.innerHTML='OTP generated! <strong style="font-size:1.3rem;color:#00695c;letter-spacing:3px">'+otp+'</strong><br><span style="font-size:0.8rem;color:#999">(In production, this OTP will be sent to your email via Firebase/SMTP. Valid for 10 min)</span>';suc.style.display='block';document.getElementById('resForgotStep1').style.display='none';document.getElementById('resForgotStep2').style.display='block'}
+async function sendResidentOTP(){const email=document.getElementById('resForgotEmail').value.trim(),err=document.getElementById('resForgotError'),suc=document.getElementById('resForgotSuccess');err.style.display='none';suc.style.display='none';if(!email){err.textContent='Enter your registered email';err.style.display='block';return}
+// Use Supabase Auth password reset (sends email link)
+const result=await SunAuth.resetPassword(email);
+if(result.error){err.textContent=result.error.message||'Email not found.';err.style.display='block';return}
+suc.innerHTML='A password reset link has been sent to <strong>'+email+'</strong>.<br><span style="font-size:0.85rem;color:#666">Check your email and click the link to set a new password. Check spam folder if not found.</span>';suc.style.display='block'}
 
 function verifyOTPResetPass(){const otp=document.getElementById('resOtpInput').value.trim(),np=document.getElementById('resNewPass').value,cf=document.getElementById('resConfirmPass').value,err=document.getElementById('resForgotError'),suc=document.getElementById('resForgotSuccess');err.style.display='none';suc.style.display='none';if(!otp||!np||!cf){err.textContent='All fields required';err.style.display='block';return}if(np.length<6){err.textContent='Password must be at least 6 characters';err.style.display='block';return}if(np!==cf){err.textContent='Passwords do not match';err.style.display='block';return}if(!pendingOTP.otp||otp!==pendingOTP.otp){err.textContent='Invalid OTP. Please try again.';err.style.display='block';return}if(Date.now()>pendingOTP.expires){err.textContent='OTP expired. Please request a new one.';err.style.display='block';return}const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');rUsers[pendingOTP.email]=np;localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');pendingOTP={};suc.textContent='Password reset successfully! You can now login with your new password.';suc.style.display='block';document.getElementById('resForgotStep2').style.display='none';document.getElementById('resForgotStep1').style.display='block';document.getElementById('resOtpInput').value='';document.getElementById('resNewPass').value='';document.getElementById('resConfirmPass').value='';setTimeout(()=>showResLoginForm(),2000)}
 
 // ===== ADMIN: RESIDENT MANAGEMENT =====
 function loadRegRequests(){const area=document.getElementById('regRequestsArea');const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const pending=residents.filter(r=>r.status==='pending');if(!pending.length){area.innerHTML='<p style="color:var(--text-light);text-align:center;padding:15px">No pending registration requests.</p>';return}let h='<table><tr><th>Date</th><th>Owner Name</th><th>Flat</th><th>Mobile</th><th>Email</th><th>Read</th><th>Write</th><th>Action</th></tr>';pending.forEach(r=>{const dt=r.requestDate?new Date(r.requestDate).toLocaleDateString():'';h+=`<tr><td>${dt}</td><td><strong>${r.ownerName}</strong></td><td>${r.flatNo}</td><td>${r.mobile}</td><td style="font-size:0.8rem">${r.email}</td><td><input type="checkbox" id="perm_r_${r.id}" checked></td><td><input type="checkbox" id="perm_w_${r.id}"></td><td><button class="btn btn-sm" style="background:#00695c;color:#fff;margin:2px" onclick="approveResident('${r.id}')">Approve</button><button class="btn btn-sm btn-danger" style="margin:2px" onclick="rejectResident('${r.id}')">Reject</button></td></tr>`});h+='</table>';area.innerHTML=h}
 
-function approveResident(id){const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;const readPerm=document.getElementById('perm_r_'+id)?.checked??true;const writePerm=document.getElementById('perm_w_'+id)?.checked??false;residents[idx].status='approved';residents[idx].permissions={read:readPerm,write:writePerm};residents[idx].approvedDate=new Date().toISOString();const tempPass='Sun'+residents[idx].flatNo.replace('-','')+'!';residents[idx].tempPass=tempPass;const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');rUsers[residents[idx].email.toLowerCase()]=tempPass;localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');if(db)db.collection('residents').doc(id).set(residents[idx],{merge:true}).catch(()=>{});alert('APPROVED!\n\nResident: '+residents[idx].ownerName+'\nFlat: '+residents[idx].flatNo+'\nEmail: '+residents[idx].email+'\n\nLogin Password: '+tempPass+'\n\nShare this password with the resident.');loadRegRequests();loadApprovedResidents()}
+async function approveResident(id){
+  const readPerm=document.getElementById('perm_r_'+id)?.checked??true;
+  const writePerm=document.getElementById('perm_w_'+id)?.checked??false;
+  try{
+    const session=await supa.auth.getSession();
+    const token=session.data.session?.access_token;
+    // Call Edge Function to create auth user securely
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/approve-resident',{
+      method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({request_id:id,permissions:{read:readPerm,write:writePerm}})
+    });
+    if(resp.ok){
+      const result=await resp.json();
+      alert('APPROVED!\n\nResident: '+result.name+'\nFlat: '+result.flat_no+'\nEmail: '+result.email+'\n\nLogin Password: '+result.temp_password+'\n\nShare this password with the resident.');
+    }else{
+      const err=await resp.json();
+      // Fallback to legacy mode
+      const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');
+      const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;
+      residents[idx].status='approved';residents[idx].permissions={read:readPerm,write:writePerm};
+      residents[idx].approvedDate=new Date().toISOString();
+      const tempPass='Sun'+residents[idx].flatNo.replace('-','')+'!';residents[idx].tempPass=tempPass;
+      const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
+      rUsers[residents[idx].email.toLowerCase()]=tempPass;
+      localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');
+      localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');
+      alert('APPROVED (legacy mode)!\n\nResident: '+residents[idx].ownerName+'\nPassword: '+tempPass);
+    }
+    loadRegRequests();loadApprovedResidents();
+  }catch(x){alert('Error: '+x.message)}}
 
 function rejectResident(id){if(!confirm('Reject this registration request?'))return;const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;residents.splice(idx,1);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');if(db)db.collection('residents').doc(id).delete().catch(()=>{});loadRegRequests()}
 
@@ -520,7 +646,28 @@ function loadApprovedResidents(){const area=document.getElementById('approvedRes
 
 function updateResPerms(id){const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;residents[idx].permissions={read:document.getElementById('ar_'+id)?.checked??true,write:document.getElementById('aw_'+id)?.checked??false};localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');if(db)db.collection('residents').doc(id).set(residents[idx],{merge:true}).catch(()=>{})}
 
-function resetResPass(id){const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const r=residents.find(x=>x.id===id);if(!r)return;const newPass='Sun'+r.flatNo.replace('-','')+'!';const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');rUsers[r.email.toLowerCase()]=newPass;localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');alert('Password reset for '+r.ownerName+':\n\nNew temp password: '+newPass+'\n\nShare with the resident.')}
+async function resetResPass(id){
+  try{
+    const session=await supa.auth.getSession();const token=session.data.session?.access_token;
+    // Try Edge Function first
+    const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');
+    const r=residents.find(x=>x.id===id);if(!r)return;
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/reset-password',{
+      method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({email:r.email})
+    }).catch(()=>null);
+    if(resp&&resp.ok){
+      const result=await resp.json();
+      alert('Password reset for '+r.ownerName+':\n\nNew password: '+result.new_password+'\n\nShare with the resident.');
+    }else{
+      // Fallback legacy
+      const newPass='Sun'+r.flatNo.replace('-','')+'!';
+      const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
+      rUsers[r.email.toLowerCase()]=newPass;
+      localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');
+      alert('Password reset (legacy) for '+r.ownerName+':\n\nNew temp password: '+newPass);
+    }
+  }catch(x){alert('Error: '+x.message)}}
 
 function revokeResident(id){if(!confirm('Revoke access for this resident? They will no longer be able to login.'))return;const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;const email=residents[idx].email.toLowerCase();residents.splice(idx,1);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');delete rUsers[email];localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');if(db)db.collection('residents').doc(id).delete().catch(()=>{});loadApprovedResidents()}
 
@@ -534,7 +681,7 @@ let projCommFilter='All';
 // ===== RBAC HELPERS =====
 function getCurrentBOMMemberName(){if(!currentUser)return null;const m=members.find(x=>x.email&&x.email.toLowerCase()===currentUser.email.toLowerCase());return m?m.name:null}
 function getMemberCommittees(name){const cm=loadCommitteeMembers();const r=[];Object.keys(cm).forEach(c=>{if(cm[c].convenor===name||cm[c].bomMember===name)r.push(c)});return r}
-function canEditProject(p){if(isAdmin)return true;const cm=loadCommitteeMembers();if(!Object.keys(cm).length)return true;const name=getCurrentBOMMemberName();if(!name)return false;return getMemberCommittees(name).includes(p.committee)}
+function canEditProject(p){if(SunAuth.isAdmin())return true;if(SunAuth.canEditCommittee(p.committee))return true;const cm=loadCommitteeMembers();if(!Object.keys(cm).length)return true;const name=getCurrentBOMMemberName();if(!name)return false;return getMemberCommittees(name).includes(p.committee)}
 function getResidentCommitteesByFlat(flatNo){if(!flatNo)return[];const cm=loadCommitteeMembers();const r=[];const nf=flatNo.toUpperCase();Object.keys(cm).forEach(c=>{if(cm[c].residents&&cm[c].residents.some(x=>x&&x.toUpperCase().includes(nf)))r.push(c)});return r}
 
 function buildResProjectList(){loadProjects();const a=document.getElementById('resProjectList');if(!a)return;let visProjcts=projects;let filterMsg='';if(residentUser&&residentUser.flatNo){const rc=getResidentCommitteesByFlat(residentUser.flatNo);if(rc.length>0){visProjcts=projects.filter(p=>rc.includes(p.committee));filterMsg=`<p style="margin-bottom:10px;font-size:0.85rem;color:#00695c"><strong>Showing projects for your committee(s): ${rc.map(c=>COMM_NAMES[c]).join(', ')}</strong></p>`}}let h=filterMsg+'<table style="width:100%"><tr><th>Project</th><th>Committee</th><th>Status</th><th>Progress</th><th>Timeline</th></tr>';visProjcts.forEach(p=>{const sc=STATUS_COLORS[p.status]||'#666';h+=`<tr style="cursor:pointer" onclick="openProjectDetail('${p.id}')"><td><strong>${p.name}</strong></td><td><span style="color:${COMM_COLORS[p.committee]||'#666'};font-weight:600">${COMM_NAMES[p.committee]||p.committee}</span></td><td><span class="badge" style="background:${sc}">${p.status}</span></td><td><div style="background:#e0e0e0;border-radius:8px;height:20px;width:100px;position:relative"><div style="background:${sc};height:100%;border-radius:8px;width:${p.progress}%"></div><span style="position:absolute;top:1px;width:100%;text-align:center;font-size:0.7rem;font-weight:700;color:${p.progress>50?'#fff':'#333'}">${p.progress}%</span></div></td><td>${p.timeline}</td></tr>`});h+='</table><p style="margin-top:10px;font-size:0.8rem;color:#999">Click any project for details</p>';a.innerHTML=h}
@@ -591,22 +738,24 @@ function createEscalationNotices(escalations){const existing=JSON.parse(localSto
 function updateEscBadge(){const notices=JSON.parse(localStorage.getItem('st_notices')||'[]');const esc=notices.filter(n=>n.category==='Escalation');const badge=document.getElementById('escalationBadge');if(badge){if(esc.length>0&&isBOMLoggedIn()){badge.textContent=esc.length;badge.style.display='inline'}else{badge.style.display='none'}}}
 
 // ===== ADMIN SETTINGS =====
-function changeAdminPass(){const cur=document.getElementById('curPass').value,np=document.getElementById('newPass').value,cf=document.getElementById('cfmPass').value,err=document.getElementById('passErr'),suc=document.getElementById('passSuc');err.style.display='none';suc.style.display='none';if(!cur||!np||!cf){err.textContent='All fields are required';err.style.display='block';return}if(np.length<6){err.textContent='New password must be at least 6 characters';err.style.display='block';return}if(np!==cf){err.textContent='New password and confirmation do not match';err.style.display='block';return}if(auth&&currentUser){const cred=firebase.auth.EmailAuthProvider.credential(currentUser.email,cur);currentUser.reauthenticateWithCredential(cred).then(()=>currentUser.updatePassword(np)).then(()=>{suc.textContent='Password changed successfully!';suc.style.display='block';document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('cfmPass').value=''}).catch(e=>{err.textContent=e.message;err.style.display='block'})}else{const u=JSON.parse(localStorage.getItem('st_users')||'{}');const ae=currentUser?currentUser.email:ADMIN_EMAIL;if(u[ae]===cur||cur==='admin123'){u[ae]=np;localStorage.setItem('st_users',JSON.stringify(u));supaSync('st_users');suc.textContent='Password changed successfully! Use new password next login.';suc.style.display='block';document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('cfmPass').value=''}else{err.textContent='Current password is incorrect';err.style.display='block'}}}
+async function changeAdminPass(){const cur=document.getElementById('curPass').value,np=document.getElementById('newPass').value,cf=document.getElementById('cfmPass').value,err=document.getElementById('passErr'),suc=document.getElementById('passSuc');err.style.display='none';suc.style.display='none';if(!cur||!np||!cf){err.textContent='All fields are required';err.style.display='block';return}if(np.length<6){err.textContent='New password must be at least 6 characters';err.style.display='block';return}if(np!==cf){err.textContent='New password and confirmation do not match';err.style.display='block';return}
+// Supabase Auth password change
+const result=await SunAuth.changePassword(np);
+if(result.error){err.textContent=result.error.message;err.style.display='block'}
+else{suc.textContent='Password changed successfully!';suc.style.display='block';document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('cfmPass').value=''}}
 function loadAdminProfile(){const p=JSON.parse(localStorage.getItem('st_admin_profile')||'{}');if(db){db.collection('settings').doc('admin_profile').get().then(d=>{if(d.exists){const data=d.data();document.getElementById('adminEmailField').value=data.email||'';document.getElementById('adminMobile').value=data.mobile||'';document.getElementById('adminDispName').value=data.displayName||''}else fillFromLS()}).catch(()=>fillFromLS())}else fillFromLS();function fillFromLS(){document.getElementById('adminEmailField').value=p.email||ADMIN_EMAIL;document.getElementById('adminMobile').value=p.mobile||'';document.getElementById('adminDispName').value=p.displayName||''}}
 function saveAdminProfile(){const email=document.getElementById('adminEmailField').value.trim(),mobile=document.getElementById('adminMobile').value.trim(),name=document.getElementById('adminDispName').value.trim(),err=document.getElementById('profErr'),suc=document.getElementById('profSuc');err.style.display='none';suc.style.display='none';if(!email){err.textContent='Email is required';err.style.display='block';return}const data={email:email,mobile:mobile,displayName:name,updatedAt:new Date().toISOString()};if(db){db.collection('settings').doc('admin_profile').set(data,{merge:true}).then(()=>{localStorage.setItem('st_admin_profile',JSON.stringify(data));supaSync('st_admin_profile');suc.textContent='Profile saved!';suc.style.display='block'}).catch(e=>{localStorage.setItem('st_admin_profile',JSON.stringify(data));supaSync('st_admin_profile');suc.textContent='Saved locally (DB unavailable)';suc.style.display='block'})}else{localStorage.setItem('st_admin_profile',JSON.stringify(data));supaSync('st_admin_profile');suc.textContent='Profile saved!';suc.style.display='block'}}
 
 // ===== INIT =====
 loadMemLS();
 try{document.getElementById('nDate').value=new Date().toISOString().split('T')[0]}catch(e){}
-// Restore resident session
-try{const sr=localStorage.getItem('st_resident_user');if(sr){residentUser=JSON.parse(sr)}}catch(e){}
 loadProjects();updateEscBadge();
-// Supabase: hydrate localStorage from cloud, then refresh UI
+// Supabase: hydrate localStorage from cloud (legacy data), then refresh UI
 supaHydrate().then(function(){loadMemLS();updateEscBadge();loadProjects()}).catch(function(){});
-// Restore BOM session (localStorage fallback when Firebase not enabled)
-try{const bs=localStorage.getItem('st_bom_session');if(bs&&!auth){const sess=JSON.parse(bs);currentUser={email:sess.email};isAdmin=sess.email===ADMIN_EMAIL;updateUI();
-// Auto-skip splash and go to BOM
-hideSplash();switchTab('bom')}}catch(e){}
+// Session restore handled by SunAuth.init() → onAuthStateChange
+// No more localStorage password checks or hardcoded admin123
+// Supabase Auth persists sessions via JWT + refresh tokens automatically
+console.log('Sun Tower RWA initialized (Supabase Auth + RLS mode)');
 </script>
 </body>
 </html>

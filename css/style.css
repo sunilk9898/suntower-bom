@@ -541,3 +541,91 @@ details[open] summary { margin-bottom: 8px; }
   .comm-detail-icon { width: 44px; height: 44px; font-size: 1.3rem; }
   .modal-tab { padding: 7px 10px; font-size: 0.72rem; }
 }
+
+/* ========== SESSION EXPIRED OVERLAY ========== */
+.session-expired-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000;
+  background: rgba(13, 27, 74, 0.95); display: flex; align-items: center; justify-content: center;
+  flex-direction: column; transition: opacity 0.4s, visibility 0.4s;
+}
+.session-expired-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.session-expired-card {
+  background: #fff; border-radius: 16px; padding: 40px 30px; text-align: center;
+  max-width: 380px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: sessionSlideIn 0.4s ease-out;
+}
+@keyframes sessionSlideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.session-expired-icon { font-size: 3.5rem; margin-bottom: 15px; }
+.session-expired-card h2 { color: var(--primary); margin-bottom: 8px; font-size: 1.3rem; }
+.session-expired-card p { color: var(--text-light); font-size: 0.9rem; margin-bottom: 20px; }
+.session-expired-card .btn { width: 100%; padding: 14px; font-size: 1rem; }
+
+/* ========== LOADING STATES ========== */
+.loading-spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 3px solid #e0e0e0; border-top-color: var(--primary);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+.loading-spinner-lg { width: 40px; height: 40px; border-width: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-overlay {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; padding: 30px; color: var(--text-light); font-size: 0.9rem;
+}
+.loading-overlay.hidden { display: none; }
+.skeleton { background: linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-line { height: 14px; margin: 8px 0; }
+.skeleton-card { height: 120px; margin: 10px 0; border-radius: 12px; }
+
+/* ========== AUTH ROLE BADGE ========== */
+.role-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px;
+  border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; }
+.role-badge-admin { background: #fce4ec; color: #b71c1c; }
+.role-badge-bom { background: #e8eaf6; color: #1a237e; }
+.role-badge-resident { background: #e0f2f1; color: #00695c; }
+
+/* ========== AUDIT LOG VIEWER ========== */
+.audit-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+.audit-filters .form-control { font-size: 0.82rem; padding: 8px 10px; }
+.audit-action-badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 600; color: #fff; }
+
+/* ========== SECURE AUTH CARD ========== */
+.auth-card .auth-mode-tabs {
+  display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden;
+  border: 2px solid var(--border);
+}
+.auth-mode-tab {
+  flex: 1; padding: 10px; text-align: center; cursor: pointer;
+  font-weight: 600; font-size: 0.85rem; transition: 0.2s;
+  background: #f5f5f5; color: var(--text-light);
+}
+.auth-mode-tab.active { background: var(--primary); color: #fff; }
+.auth-mode-tab:first-child { border-radius: 8px 0 0 8px; }
+.auth-mode-tab:last-child { border-radius: 0 8px 8px 0; }
+
+/* ========== SUPABASE CONNECTION STATUS ========== */
+.supa-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; padding: 3px 10px; border-radius: 12px;
+}
+.supa-status-connected { background: #e8f5e9; color: #2e7d32; }
+.supa-status-disconnected { background: #fce4ec; color: #b71c1c; }
+.supa-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.supa-status-connected .supa-status-dot { background: #2e7d32; animation: pulse 2s infinite; }
+.supa-status-disconnected .supa-status-dot { background: #b71c1c; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ========== RESPONSIVE: SESSION + AUDIT ========== */
+@media (max-width: 768px) {
+  .session-expired-card { padding: 30px 20px; }
+  .audit-filters { flex-direction: column; }
+  .audit-filters .form-control { max-width: 100% !important; }
+}
+@media (max-width: 480px) {
+  .session-expired-card { padding: 25px 15px; }
+  .session-expired-card h2 { font-size: 1.1rem; }
+  .role-badge { font-size: 0.65rem; padding: 3px 8px; }
+}
