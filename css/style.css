@@ -357,3 +357,53 @@ details summary::-webkit-details-marker { display: none; }
 details summary::before { content: '+ '; font-weight: 700; }
 details[open] summary::before { content: '- '; }
 details[open] summary { margin-bottom: 8px; }
+
+/* ========== PROJECT DASHBOARD UI OVERHAUL ========== */
+.proj-stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.proj-stat-card { background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: var(--shadow); border-top: 3px solid var(--primary); }
+.proj-stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+.proj-stat-card .stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+.proj-filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.proj-filter-btn { padding: 6px 16px; border-radius: 20px; border: 2px solid var(--border); background: #fff; font-size: 0.8rem; cursor: pointer; font-weight: 600; transition: 0.2s; }
+.proj-filter-btn:hover { opacity: 0.85; }
+.proj-summary-card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); transition: 0.2s; }
+.proj-summary-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+.proj-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.proj-card-title { font-size: 1.05rem; font-weight: 700; margin: 0; line-height: 1.3; }
+.proj-card-committee { font-size: 0.8rem; font-weight: 600; margin-top: 3px; }
+.proj-card-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; color: var(--text-light); margin-bottom: 12px; }
+.proj-card-meta strong { color: var(--text); }
+.proj-card-progress { margin-bottom: 12px; }
+.proj-card-progress-bar { background: #e0e0e0; border-radius: 8px; height: 20px; position: relative; overflow: hidden; }
+.proj-card-progress-fill { height: 100%; border-radius: 8px; transition: width 0.3s; }
+.proj-card-progress-text { position: absolute; top: 1px; width: 100%; text-align: center; font-size: 0.7rem; font-weight: 700; }
+.proj-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.proj-action-btn { padding: 7px 14px; border-radius: 8px; border: none; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+.proj-action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.proj-action-btn-committee { background: #e8eaf6; color: var(--primary); border: 1px solid #c5cae9; }
+.proj-action-btn-status { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+.proj-action-btn-edit { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+.proj-action-btn-view { background: #f5f5f5; color: #999; border: 1px solid #e0e0e0; cursor: default; }
+.proj-action-btn-view:hover { transform: none; opacity: 1; }
+.modal-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 15px; flex-wrap: wrap; gap: 0; }
+.modal-tab { padding: 10px 18px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; background: none; color: var(--text-light); border-bottom: 3px solid transparent; transition: 0.2s; }
+.modal-tab:hover { color: var(--primary); background: #f5f5f5; }
+.modal-tab.active { color: var(--primary); border-bottom-color: var(--secondary); }
+.modal-tab-panel { display: none; }
+.modal-tab-panel.active { display: block; }
+.comm-detail-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+.comm-detail-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.6rem; flex-shrink: 0; }
+.comm-detail-members { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.comm-detail-member { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f5f5f5; border-radius: 8px; font-size: 0.85rem; }
+.comm-detail-role { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+@media (max-width: 768px) {
+  .proj-stats-bar { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .proj-filter-bar { gap: 4px; }
+  .proj-filter-btn { padding: 5px 10px; font-size: 0.72rem; }
+  .proj-card-header { flex-direction: column; }
+  .proj-card-actions { flex-direction: column; }
+  .proj-action-btn { width: 100%; justify-content: center; }
+  .comm-detail-members { grid-template-columns: 1fr; }
+  .modal-tab { padding: 8px 12px; font-size: 0.78rem; }
+  .proj-stat-card .stat-value { font-size: 1.4rem; }
+}
