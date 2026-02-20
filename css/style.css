@@ -427,6 +427,13 @@ details[open] summary { margin-bottom: 8px; }
 .acct-status-never .acct-status-dot { background: #e65100; }
 .acct-pw-reveal { background: #f5f5f5; padding: 3px 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: 700; font-size: 0.82rem; color: var(--primary); cursor: pointer; border: 1px solid #e0e0e0; }
 .acct-pw-reveal:hover { background: #e8eaf6; }
+.acct-action-group { display: flex; gap: 4px; flex-wrap: nowrap; }
+.acct-action-group .btn-sm { padding: 4px 8px; font-size: 0.72rem; min-width: 30px; min-height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+.acct-edit-form { display: grid; gap: 14px; }
+.acct-edit-form .form-group { margin-bottom: 0; }
+.acct-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.acct-edit-actions { display: flex; gap: 10px; margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--border); }
+.acct-edit-meta { font-size: 0.78rem; color: var(--text-light); padding: 10px; background: #f5f5f5; border-radius: 8px; margin-top: 4px; }
 .acct-empty { text-align: center; padding: 30px 20px; color: var(--text-light); }
 .acct-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
 .acct-summary-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
@@ -444,6 +451,9 @@ details[open] summary { margin-bottom: 8px; }
   .acct-copy-btn { width: 100%; justify-content: center; min-height: 44px; }
   .acct-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .acct-table th, .acct-table td { white-space: nowrap; padding: 6px 5px; font-size: 0.78rem; }
+  .acct-edit-row { grid-template-columns: 1fr; }
+  .acct-edit-actions { flex-direction: column; }
+  .acct-edit-actions .btn { width: 100%; justify-content: center; min-height: 44px; }
 }
 @media (max-width: 480px) {
   .acct-summary-bar { grid-template-columns: 1fr; gap: 6px; }
