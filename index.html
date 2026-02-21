@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260222b">
+<link rel="stylesheet" href="css/style.css?v=20260222c">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260222b"></script>
-<script src="js/audit.js?v=20260222b"></script>
-<script src="js/auth.js?v=20260222b"></script>
-<script src="js/data.js?v=20260222b"></script>
+<script src="js/supabase-config.js?v=20260222c"></script>
+<script src="js/audit.js?v=20260222c"></script>
+<script src="js/auth.js?v=20260222c"></script>
+<script src="js/data.js?v=20260222c"></script>
 </head>
 <body>
 
@@ -568,7 +568,7 @@ function updateUI(){const u=document.getElementById('headerUser'),b=document.get
 function loadMemDB(){if(db){db.collection('members').orderBy('rank').get().then(s=>{if(!s.empty){members=s.docs.map(d=>d.data());updatePosBadges()}else loadMemLS()}).catch(()=>loadMemLS())}else loadMemLS()}
 function loadMemLS(){try{const s=localStorage.getItem('suntower_members');if(s){members=JSON.parse(s);updatePosBadges()}}catch(e){}}
 function buildElectionTable(){const t=document.getElementById('electionTable');if(!t)return;
-  const POS_ORDER=['President','Vice President','Gen Secretary','Vice Gen Secretary','Treasurer','Vice Treasurer','Joint Treasurer','Joint Secretary','Sport Secretary','Culture Secretary','Spokesperson','Chairman','Co-Chairman','PRO','Advisor','Member','Executive Member'];
+  const POS_ORDER=['President','Vice President','Gen Secretary','Vice Gen Secretary','Joint Secretary','Treasurer','Vice Treasurer','Joint Treasurer','Sport Secretary','Culture Secretary','Spokesperson','Chairman','Co-Chairman','PRO','Advisor','Member','Executive Member'];
   // Merge EM + members and sort by position hierarchy
   const merged=EM.map((m,i)=>{const mem=members[i];return{name:m.name,flat:m.flat,v:m.v,pos:mem&&mem.position?mem.position:'To be elected'}});
   merged.sort((a,b)=>{const ai=POS_ORDER.indexOf(a.pos);const bi=POS_ORDER.indexOf(b.pos);const pa=ai>=0?ai:(a.pos==='To be elected'?999:POS_ORDER.length);const pb=bi>=0?bi:(b.pos==='To be elected'?999:POS_ORDER.length);if(pa!==pb)return pa-pb;return b.v-a.v});
