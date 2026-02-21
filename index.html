@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260221i">
+<link rel="stylesheet" href="css/style.css?v=20260222a">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260221i"></script>
-<script src="js/audit.js?v=20260221i"></script>
-<script src="js/auth.js?v=20260221i"></script>
-<script src="js/data.js?v=20260221i"></script>
+<script src="js/supabase-config.js?v=20260222a"></script>
+<script src="js/audit.js?v=20260222a"></script>
+<script src="js/auth.js?v=20260222a"></script>
+<script src="js/data.js?v=20260222a"></script>
 </head>
 <body>
 
@@ -567,7 +567,15 @@ function updateUI(){const u=document.getElementById('headerUser'),b=document.get
 // ===== MEMBERS =====
 function loadMemDB(){if(db){db.collection('members').orderBy('rank').get().then(s=>{if(!s.empty){members=s.docs.map(d=>d.data());updatePosBadges()}else loadMemLS()}).catch(()=>loadMemLS())}else loadMemLS()}
 function loadMemLS(){try{const s=localStorage.getItem('suntower_members');if(s){members=JSON.parse(s);updatePosBadges()}}catch(e){}}
-function buildElectionTable(){const t=document.getElementById('electionTable');if(!t)return;let h='<tr><th>#</th><th>Name</th><th>Flat</th><th>Votes</th><th>Position</th></tr>';EM.forEach((m,i)=>{const mem=members[i];const pos=mem&&mem.position?mem.position:'To be elected';const pc={'President':'badge-president','Vice President':'badge-vp','Gen Secretary':'badge-gs','Vice Gen Secretary':'badge-vgs','Treasurer':'badge-treasurer','Vice Treasurer':'badge-vt','Joint Secretary':'badge-vgs','Sport Secretary':'badge-info','Culture Secretary':'badge-info','Spokesperson':'badge-warning','Chairman':'badge-president','Co-Chairman':'badge-vp','PRO':'badge-info','Advisor':'badge-vt','Member':'badge-member'};const cls=pc[pos]||'badge-success';h+=`<tr style="background:#e8f5e9"><td>${i+1}</td><td><strong>${m.name}</strong></td><td>${m.flat}</td><td><strong>${m.v}</strong></td><td><span class="badge ${cls}">${pos}</span></td></tr>`});t.innerHTML=h}
+function buildElectionTable(){const t=document.getElementById('electionTable');if(!t)return;
+  const POS_ORDER=['President','Vice President','Gen Secretary','Vice Gen Secretary','Treasurer','Vice Treasurer','Joint Secretary','Sport Secretary','Culture Secretary','Spokesperson','Chairman','Co-Chairman','PRO','Advisor','Member'];
+  // Merge EM + members and sort by position hierarchy
+  const merged=EM.map((m,i)=>{const mem=members[i];return{name:m.name,flat:m.flat,v:m.v,pos:mem&&mem.position?mem.position:'To be elected'}});
+  merged.sort((a,b)=>{const ai=POS_ORDER.indexOf(a.pos);const bi=POS_ORDER.indexOf(b.pos);const pa=ai>=0?ai:(a.pos==='To be elected'?999:POS_ORDER.length);const pb=bi>=0?bi:(b.pos==='To be elected'?999:POS_ORDER.length);if(pa!==pb)return pa-pb;return b.v-a.v});
+  const pc={'President':'badge-president','Vice President':'badge-vp','Gen Secretary':'badge-gs','Vice Gen Secretary':'badge-vgs','Treasurer':'badge-treasurer','Vice Treasurer':'badge-vt','Joint Secretary':'badge-vgs','Sport Secretary':'badge-info','Culture Secretary':'badge-info','Spokesperson':'badge-warning','Chairman':'badge-president','Co-Chairman':'badge-vp','PRO':'badge-info','Advisor':'badge-vt','Member':'badge-member'};
+  let h='<tr><th>#</th><th>Name</th><th>Flat</th><th>Votes</th><th>Position</th></tr>';
+  merged.forEach((m,i)=>{const cls=pc[m.pos]||'badge-success';h+=`<tr style="background:#e8f5e9"><td>${i+1}</td><td><strong>${m.name}</strong></td><td>${m.flat}</td><td><strong>${m.v}</strong></td><td><span class="badge ${cls}">${m.pos}</span></td></tr>`});
+  t.innerHTML=h}
 function updatePosBadges(){buildElectionTable()}
 function initMemForm(){const f=document.getElementById('memberForm');if(!f)return;const ro=!isAdmin;f.innerHTML='';for(let i=0;i<10;i++){const m=members[i]||{};const em=EM[i]||{};const d=ro?'disabled':'';const isCustomPos=m.position&&!POS.includes(m.position)&&m.position!=='Custom...';const selVal=isCustomPos?'Custom...':m.position||'';f.innerHTML+=`<div class="member-card"><div style="text-align:center;font-weight:700;color:var(--primary);margin-bottom:10px">Member ${i+1} | Votes: ${em.v||''}</div><label>Name</label><input type="text" id="n_${i}" value="${m.name||em.name||''}" ${d}><label>Flat</label><input type="text" id="f_${i}" value="${m.flat||em.flat||''}" ${d}><label>Profession</label><select id="pr_${i}" ${d}><option value="">--</option>${PROF.map(p=>`<option value="${p}" ${m.profession===p?'selected':''}>${p}</option>`).join('')}</select><label>Position</label><select id="po_${i}" ${d} onchange="handlePosChange(${i})"><option value="">-- To be elected --</option>${POS.map(p=>`<option value="${p}" ${selVal===p?'selected':''}>${p}</option>`).join('')}</select><div id="customPos_${i}" style="display:${isCustomPos?'block':'none'};margin-top:4px"><input type="text" id="cp_${i}" value="${isCustomPos?m.position:''}" placeholder="Enter custom designation" ${d} style="border:2px solid var(--secondary)"></div><label>Phone</label><input type="text" id="ph_${i}" value="${m.phone||''}" ${d}><label>Email</label><input type="email" id="em_${i}" value="${m.email||''}" ${d}></div>`}document.getElementById('memberAdminLock').style.display=ro?'block':'none';document.getElementById('memberActions').style.display=ro?'none':'flex'}
 function handlePosChange(i){const sel=document.getElementById('po_'+i).value;const box=document.getElementById('customPos_'+i);if(sel==='Custom...'){box.style.display='block';document.getElementById('cp_'+i).focus()}else{box.style.display='none';document.getElementById('cp_'+i).value=''}}
