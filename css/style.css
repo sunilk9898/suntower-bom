@@ -629,3 +629,52 @@ details[open] summary { margin-bottom: 8px; }
   .session-expired-card h2 { font-size: 1.1rem; }
   .role-badge { font-size: 0.65rem; padding: 3px 8px; }
 }
+
+/* ========== RESIDENT DIRECTORY ========== */
+.directory-search-bar { background: #fff; border-radius: 12px; padding: 16px; box-shadow: var(--shadow); margin-bottom: 15px; }
+.directory-search-bar input { font-size: 1rem; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; width: 100%; box-sizing: border-box; transition: border-color 0.3s; }
+.directory-search-bar input:focus { border-color: var(--primary); outline: none; }
+.directory-filters { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.directory-filters select { padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.85rem; min-width: 130px; }
+.directory-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.dir-stat-card { background: #fff; border-radius: 10px; padding: 12px 18px; box-shadow: var(--shadow); flex: 1; min-width: 120px; text-align: center; }
+.dir-stat-card .stat-num { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+.dir-stat-card .stat-label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+.dir-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.dir-table th { background: var(--primary); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; position: sticky; top: 0; }
+.dir-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+.dir-table tr:hover { background: #f0f7ff; }
+.dir-table-wrap { max-height: 500px; overflow-y: auto; background: #fff; border-radius: 10px; box-shadow: var(--shadow); }
+.dir-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+.dir-badge-owner { background: #e3f2fd; color: #1565c0; }
+.dir-badge-tenant { background: #fff3e0; color: #e65100; }
+.dir-badge-family { background: #f3e5f5; color: #7b1fa2; }
+.dir-badge-active { background: #e8f5e9; color: #2e7d32; }
+.dir-badge-inactive { background: #fce4ec; color: #c62828; }
+.dir-tower-tag { background: #263238; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px; margin-right: 4px; }
+
+/* ========== AUTOCOMPLETE DROPDOWN ========== */
+.autocomplete-wrapper { position: relative; flex: 1; }
+.autocomplete-wrapper input { width: 100%; box-sizing: border-box; }
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; }
+.autocomplete-list.show { display: block; }
+.autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 0.82rem; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center; }
+.autocomplete-item:hover, .autocomplete-item.active { background: #e3f2fd; }
+.autocomplete-item .ac-name { font-weight: 600; color: #333; }
+.autocomplete-item .ac-flat { font-size: 0.75rem; color: #666; background: #f5f5f5; padding: 1px 6px; border-radius: 4px; }
+.autocomplete-item .ac-type { font-size: 0.65rem; color: #999; }
+
+/* ========== RESPONSIVE: DIRECTORY ========== */
+@media (max-width: 768px) {
+  .directory-filters { flex-direction: column; }
+  .directory-filters select { width: 100%; }
+  .dir-stat-card { min-width: 80px; }
+  .dir-table { font-size: 0.78rem; }
+  .dir-table th, .dir-table td { padding: 6px 8px; }
+  .autocomplete-list { max-height: 160px; }
+}
+@media (max-width: 480px) {
+  .directory-search-bar { padding: 10px; }
+  .dir-stat-card { min-width: 70px; padding: 8px 10px; }
+  .dir-stat-card .stat-num { font-size: 1.2rem; }
+}

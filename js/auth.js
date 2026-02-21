@@ -38,7 +38,7 @@ const SunAuth = (function() {
           return;
         }
         _user = session.user;
-        await _loadProfile();
+        await _loadProfile(session.access_token);
         _startSessionMonitor();
       } else if (event === 'SIGNED_OUT') {
         _clearState();
@@ -54,35 +54,7 @@ const SunAuth = (function() {
         });
       }
 
-      // Schedule server-side validation after the auth lock releases
-      // This runs getUser() to verify JWT with Supabase API
-      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-        setTimeout(() => _validateSession(), 100);
-      }
     });
-  }
-
-  // Server-side session validation (runs after onAuthStateChange fires)
-  // Calls getUser() which contacts Supabase API to verify the JWT is still valid.
-  // If invalid, purges tokens and forces sign-out state.
-  // Note: This runs AFTER onAuthStateChange has already processed INITIAL_SESSION,
-  // so it acts as a secondary verification, not the primary session restore.
-  async function _validateSession() {
-    if (!supa || !_user) return;
-    try {
-      const { data: { user }, error } = await supa.auth.getUser();
-      if (error || !user) {
-        console.warn('SunAuth: server-side validation failed, clearing session');
-        _purgeStoredTokens();
-        _clearState();
-        await supa.auth.signOut({ scope: 'local' }).catch(() => {});
-        if (_onAuthChange) {
-          _onAuthChange({ event: 'SIGNED_OUT', user: null, profile: null, role: null });
-        }
-      }
-    } catch (e) {
-      console.warn('SunAuth: validation error:', e);
-    }
   }
 
   // Load profile from Supabase
@@ -91,21 +63,25 @@ const SunAuth = (function() {
   // onAuthStateChange callbacks. Calling supa.from().select() inside that
   // callback causes a deadlock because the REST request waits for the lock
   // to release, but the lock waits for the callback to finish.
-  async function _loadProfile() {
+  // Accepts optional accessToken param (preferred) — avoids reading stale localStorage.
+  async function _loadProfile(tokenParam) {
     if (!_user) return;
     try {
-      // Get current access token from localStorage
-      const tokenKey = 'sb-ogkxlgyybnjnikntzfag-auth-token';
-      const stored = localStorage.getItem(tokenKey);
-      if (!stored) {
-        console.warn('SunAuth: no stored token for profile fetch');
-        return;
-      }
-      const tokenData = JSON.parse(stored);
-      const accessToken = tokenData.access_token;
+      // Prefer passed token (from session object); fall back to localStorage
+      let accessToken = tokenParam;
       if (!accessToken) {
-        console.warn('SunAuth: no access_token in stored session');
-        return;
+        const tokenKey = 'sb-ogkxlgyybnjnikntzfag-auth-token';
+        const stored = localStorage.getItem(tokenKey);
+        if (!stored) {
+          console.warn('SunAuth: no stored token for profile fetch');
+          return;
+        }
+        const tokenData = JSON.parse(stored);
+        accessToken = tokenData.access_token;
+        if (!accessToken) {
+          console.warn('SunAuth: no access_token in stored session');
+          return;
+        }
       }
 
       const url = SUPABASE_URL + '/rest/v1/profiles?select=*&id=eq.' + _user.id;
@@ -169,7 +145,7 @@ const SunAuth = (function() {
       }
 
       _user = data.user;
-      await _loadProfile();
+      await _loadProfile(data.session?.access_token);
       _startSessionMonitor();
 
       // Log audit event
