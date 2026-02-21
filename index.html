@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260221e">
+<link rel="stylesheet" href="css/style.css?v=20260221f">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260221e"></script>
-<script src="js/audit.js?v=20260221e"></script>
-<script src="js/auth.js?v=20260221e"></script>
-<script src="js/data.js?v=20260221e"></script>
+<script src="js/supabase-config.js?v=20260221f"></script>
+<script src="js/audit.js?v=20260221f"></script>
+<script src="js/auth.js?v=20260221f"></script>
+<script src="js/data.js?v=20260221f"></script>
 </head>
 <body>
 
@@ -151,8 +151,8 @@
 
 <!-- MAIN TABS -->
 <div class="main-tabs" id="mainTabs" style="display:none;">
-  <button class="main-tab active" onclick="switchTab('bom')" id="tabBom"><span class="lock-icon">&#128274;</span> BOM Internal</button>
-  <button class="main-tab" onclick="switchTab('resident')" id="tabResident"><span class="lock-icon">&#128274;</span> Resident Portal</button>
+  <button class="main-tab" onclick="switchTab('bom')" id="tabBom" style="display:none"><span class="lock-icon">&#128274;</span> BOM Internal</button>
+  <button class="main-tab active" onclick="switchTab('resident')" id="tabResident">&#127968; Resident Portal</button>
   <button class="main-tab" onclick="switchTab('policy')" id="tabPolicy">Policies &amp; SOP</button>
   <button class="main-tab" onclick="switchTab('notices')" id="tabNotices">Notice Board <span id="escalationBadge" style="display:none;background:#b71c1c;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px;margin-left:4px"></span></button>
 </div>
@@ -456,8 +456,10 @@ SunAuth.init(function(state) {
       residentUser=state.profile?{ownerName:state.profile.display_name||state.user.email,flatNo:state.profile.flat_no||'',email:state.user.email,status:'approved'}:null;
     }
     updateUI();
-    // Auto-navigate based on role when session is restored
+    // Show/hide BOM tab based on role
+    var bomTab=document.getElementById('tabBom');
     if ((state.role==='admin'||state.role==='bom')) {
+      if(bomTab)bomTab.style.display='';
       var bp=document.getElementById('page_bom');
       if (bp&&bp.classList.contains('active')) {
         unlockBOM();
@@ -465,13 +467,18 @@ SunAuth.init(function(state) {
         // BOM/admin user — auto-switch to BOM tab
         hideSplash();switchTab('bom');
       }
-    } else if (state.role==='resident'&&residentUser&&(state.event==='INITIAL_SESSION')) {
-      // Resident user with restored session — auto-unlock resident portal
-      var rp=document.getElementById('page_resident');
-      if(rp&&rp.classList.contains('active')) unlockResident();
+    } else {
+      if(bomTab)bomTab.style.display='none';
+      if (state.role==='resident'&&residentUser&&(state.event==='INITIAL_SESSION')) {
+        // Resident user with restored session — auto-unlock resident portal
+        var rp=document.getElementById('page_resident');
+        if(rp&&rp.classList.contains('active')) unlockResident();
+      }
     }
   } else if (state.event==='SIGNED_OUT'||state.event==='SESSION_EXPIRED') {
     currentUser=null;isAdmin=false;residentUser=null;
+    var bomTab=document.getElementById('tabBom');
+    if(bomTab)bomTab.style.display='none';
     updateUI();lockBOMUI();
   }
 });
@@ -517,14 +524,35 @@ if(result.error){err.textContent=result.error.message||'Invalid email or passwor
 currentUser={email:result.data.user.email,id:result.data.user.id};
 isAdmin=result.data.role==='admin';
 trackBOMLogin();updateUI();
+var bomTab=document.getElementById('tabBom');if(bomTab)bomTab.style.display='';
 suc.textContent='Success!';suc.style.display='block';
 setTimeout(()=>{hideAuth();switchTab('bom')},500)}
 async function doForgotPw(){const e=document.getElementById('forgotEmail').value.trim(),err=document.getElementById('forgotError'),suc=document.getElementById('forgotSuccess');err.style.display='none';suc.style.display='none';if(!e){err.textContent='Enter email';err.style.display='block';return}
 const result=await SunAuth.resetPassword(e);
 if(result.error){err.textContent=result.error.message;err.style.display='block'}
 else{suc.textContent='Reset link sent to your email!';suc.style.display='block'}}
-function toggleAuthBtn(){if(currentUser)doLogout();else showAuth()}
-async function doLogout(){await SunAuth.logout();currentUser=null;isAdmin=false;residentUser=null;updateUI();lockBOMUI();goHome()}
+function toggleAuthBtn(){
+  if(currentUser){doLogout();return}
+  // Show unified login chooser
+  showLoginChooser();
+}
+function showLoginChooser(){
+  document.getElementById('mTitle').textContent='Login';
+  document.getElementById('mBody').innerHTML=`<div style="text-align:center;padding:20px">
+    <p style="color:#666;margin-bottom:25px;font-size:0.95rem">Select your login type</p>
+    <div style="display:flex;gap:15px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-lg" style="background:#00695c;color:#fff;padding:15px 30px;border-radius:12px;min-width:180px" onclick="closeModal();showResidentAuth('login')">
+        <div style="font-size:1.5rem;margin-bottom:5px">&#127968;</div>Resident Login
+      </button>
+      <button class="btn btn-lg" style="background:var(--primary);color:#fff;padding:15px 30px;border-radius:12px;min-width:180px" onclick="closeModal();showAuth()">
+        <div style="font-size:1.5rem;margin-bottom:5px">&#128274;</div>BOM / Admin Login
+      </button>
+    </div>
+    <p style="color:#999;font-size:0.78rem;margin-top:20px">Not registered? <a href="#" onclick="closeModal();showResidentAuth('register');return false" style="color:#00695c;font-weight:600">Request Registration</a></p>
+  </div>`;
+  document.getElementById('noticeModal').classList.remove('hidden');
+}
+async function doLogout(){await SunAuth.logout();currentUser=null;isAdmin=false;residentUser=null;var bomTab=document.getElementById('tabBom');if(bomTab)bomTab.style.display='none';updateUI();lockBOMUI();switchTab('resident')}
 function updateUI(){const u=document.getElementById('headerUser'),b=document.getElementById('headerAuthBtn');if(currentUser){const role=SunAuth.getRole();const roleBadge=role==='admin'?'<span class="role-badge role-badge-admin">ADMIN</span>':role==='bom'?'<span class="role-badge role-badge-bom">BOM</span>':role==='resident'?'<span class="role-badge role-badge-resident">RESIDENT</span>':'';u.innerHTML=(currentUser.email||'')+' '+roleBadge;b.textContent='Logout'}else{u.innerHTML='';b.textContent='Login'}}
 
 // ===== MEMBERS =====
