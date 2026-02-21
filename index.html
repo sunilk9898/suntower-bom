@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260221g">
+<link rel="stylesheet" href="css/style.css?v=20260221h">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260221g"></script>
-<script src="js/audit.js?v=20260221g"></script>
-<script src="js/auth.js?v=20260221g"></script>
-<script src="js/data.js?v=20260221g"></script>
+<script src="js/supabase-config.js?v=20260221h"></script>
+<script src="js/audit.js?v=20260221h"></script>
+<script src="js/auth.js?v=20260221h"></script>
+<script src="js/data.js?v=20260221h"></script>
 </head>
 <body>
 
@@ -887,6 +887,26 @@ function editResidentAccount(id){
   document.getElementById('noticeModal').classList.remove('hidden');
 }
 
+// Update Supabase Auth password for a user (admin operation)
+async function updateAuthPassword(userId, newPassword){
+  try{
+    const resp=await fetch(SUPABASE_URL+'/auth/v1/admin/users/'+userId,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+SUPABASE_SERVICE_KEY,'apikey':SUPABASE_SERVICE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({password:newPassword})
+    });
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      console.error('updateAuthPassword failed:',resp.status,err);
+      return {ok:false,error:err.msg||'Failed to update password'};
+    }
+    return {ok:true};
+  }catch(e){
+    console.error('updateAuthPassword error:',e);
+    return {ok:false,error:e.message};
+  }
+}
+
 async function saveResidentAccountEdit(id,source){
   const name=document.getElementById('editResAcctName').value.trim();
   const flat=document.getElementById('editResAcctFlat').value.trim().toUpperCase();
@@ -911,8 +931,12 @@ async function saveResidentAccountEdit(id,source){
       localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');
     }
   }
-  // Update password in st_res_users
+  // Update password — sync to Supabase Auth AND localStorage
   if(pass){
+    if(source==='supabase'){
+      const authResult=await updateAuthPassword(id,pass);
+      if(!authResult.ok){alert('Warning: Could not update login password: '+(authResult.error||'Unknown error')+'\nProfile was saved but password unchanged.');return}
+    }
     const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
     const r=_approvedResidents.find(x=>x.id===id);
     if(r){
@@ -948,25 +972,21 @@ function deleteResidentAccount(id){
 
 async function resetResPass(id){
   try{
-    const session=await supa.auth.getSession();const token=session.data.session?.access_token;
-    // Try Edge Function first
-    const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');
-    const r=residents.find(x=>x.id===id);if(!r)return;
-    const resp=await fetch(SUPABASE_URL+'/functions/v1/reset-password',{
-      method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({email:r.email})
-    }).catch(()=>null);
-    if(resp&&resp.ok){
-      const result=await resp.json();
-      alert('Password reset for '+r.ownerName+':\n\nNew password: '+result.new_password+'\n\nShare with the resident.');
-    }else{
-      // Fallback legacy
-      const newPass='Sun'+r.flatNo.replace('-','')+'!';
-      const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
-      rUsers[r.email.toLowerCase()]=newPass;
-      localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');
-      alert('Password reset (legacy) for '+r.ownerName+':\n\nNew temp password: '+newPass);
+    // Find resident from approved list (works for both Supabase and legacy)
+    const r=_approvedResidents.find(x=>x.id===id);
+    if(!r){alert('Resident not found');return}
+    const newPass='Sun'+(r.flatNo||'User').replace('-','')+'!';
+    // For Supabase auth users, update the actual auth password
+    if(r.source==='supabase'||r.source==='auth'){
+      const authResult=await updateAuthPassword(id,newPass);
+      if(!authResult.ok){alert('Error resetting password: '+(authResult.error||'Unknown error'));return}
     }
+    // Also update localStorage for display
+    const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
+    rUsers[r.email.toLowerCase()]=newPass;
+    localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');
+    alert('Password reset for '+(r.ownerName||r.email)+':\n\nNew password: '+newPass+'\n\nShare with the resident.');
+    loadApprovedResidents();
   }catch(x){alert('Error: '+x.message)}}
 
 function revokeResident(id){if(!confirm('Revoke access for this resident? They will no longer be able to login.'))return;const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;const email=residents[idx].email.toLowerCase();residents.splice(idx,1);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');delete rUsers[email];localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');if(db)db.collection('residents').doc(id).delete().catch(()=>{});loadApprovedResidents()}
