@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260221d">
+<link rel="stylesheet" href="css/style.css?v=20260221e">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260221d"></script>
-<script src="js/audit.js?v=20260221d"></script>
-<script src="js/auth.js?v=20260221d"></script>
-<script src="js/data.js?v=20260221d"></script>
+<script src="js/supabase-config.js?v=20260221e"></script>
+<script src="js/audit.js?v=20260221e"></script>
+<script src="js/auth.js?v=20260221e"></script>
+<script src="js/data.js?v=20260221e"></script>
 </head>
 <body>
 
@@ -456,10 +456,19 @@ SunAuth.init(function(state) {
       residentUser=state.profile?{ownerName:state.profile.display_name||state.user.email,flatNo:state.profile.flat_no||'',email:state.user.email,status:'approved'}:null;
     }
     updateUI();
-    // Auto-unlock BOM if user has BOM/admin role and BOM page is active
+    // Auto-navigate based on role when session is restored
     if ((state.role==='admin'||state.role==='bom')) {
       var bp=document.getElementById('page_bom');
-      if (bp&&bp.classList.contains('active')) unlockBOM();
+      if (bp&&bp.classList.contains('active')) {
+        unlockBOM();
+      } else if (state.event==='INITIAL_SESSION'||state.event==='SIGNED_IN') {
+        // BOM/admin user — auto-switch to BOM tab
+        hideSplash();switchTab('bom');
+      }
+    } else if (state.role==='resident'&&residentUser&&(state.event==='INITIAL_SESSION')) {
+      // Resident user with restored session — auto-unlock resident portal
+      var rp=document.getElementById('page_resident');
+      if(rp&&rp.classList.contains('active')) unlockResident();
     }
   } else if (state.event==='SIGNED_OUT'||state.event==='SESSION_EXPIRED') {
     currentUser=null;isAdmin=false;residentUser=null;
@@ -1282,6 +1291,19 @@ supaHydrate().then(function(){loadMemLS();updateEscBadge();loadProjects()}).catc
 // No more localStorage password checks or hardcoded admin123
 // Supabase Auth persists sessions via JWT + refresh tokens automatically
 console.log('Sun Tower RWA initialized (Supabase Auth + RLS mode)');
+
+// Default landing: Resident Portal (suntower.in is for residents)
+// BOM members access via Login button or BOM Internal tab
+setTimeout(function(){
+  // Only auto-enter if still on splash screen (not already navigated)
+  var splash=document.getElementById('splashScreen');
+  if(splash&&splash.style.display!=='none'&&!splash.classList.contains('hidden')){
+    hideSplash();
+    switchTab('resident');
+    // Don't show login overlay by default — let residents browse the portal
+    // They'll click Login when ready
+  }
+},300);
 </script>
 </body>
 </html>
