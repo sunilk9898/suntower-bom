@@ -167,7 +167,7 @@
 </div>
 
 <!-- ================ TAB: BOM INTERNAL ================ -->
-<div class="page has-subnav active" id="page_bom">
+<div class="page" id="page_bom">
   <div id="bomLocked" style="text-align:center;padding:100px 20px;">
     <div style="font-size:4rem;margin-bottom:15px;">&#128274;</div>
     <h2 style="color:var(--primary);margin-bottom:10px;" data-edit="bom_locked_title">BOM Internal - Restricted Access</h2>
@@ -396,29 +396,22 @@ let db=null,auth=null,storage=null,currentUser=null,isAdmin=false,residentUser=n
 // Initialize Supabase Auth listener
 SunAuth.init(function(state) {
   console.log('Auth state:', state.event, state.role);
-  if (state.event === 'SIGNED_IN' || state.event === 'RESTORED' || state.event === 'TOKEN_REFRESHED') {
-    currentUser = state.user ? { email: state.user.email, id: state.user.id } : null;
-    isAdmin = state.role === 'admin';
-    // Check if resident
-    if (state.role === 'resident') {
-      residentUser = state.profile ? {
-        ownerName: state.profile.display_name || state.user.email,
-        flatNo: state.profile.flat_no || '',
-        email: state.user.email,
-        status: 'approved'
-      } : null;
+  if (state.event==='SIGNED_IN'||state.event==='RESTORED'||state.event==='TOKEN_REFRESHED'||state.event==='INITIAL_SESSION') {
+    if (!state.user) { currentUser=null;isAdmin=false;residentUser=null;updateUI();lockBOMUI();return; }
+    currentUser={email:state.user.email,id:state.user.id};
+    isAdmin=state.role==='admin';
+    if (state.role==='resident') {
+      residentUser=state.profile?{ownerName:state.profile.display_name||state.user.email,flatNo:state.profile.flat_no||'',email:state.user.email,status:'approved'}:null;
     }
     updateUI();
-    // Auto-navigate if on BOM page
-    if (state.role === 'admin' || state.role === 'bom') {
-      if (document.getElementById('bomContent').style.display==='block') unlockBOM();
+    // Only auto-unlock BOM on explicit SIGNED_IN (not passive RESTORED/TOKEN_REFRESHED)
+    if (state.event==='SIGNED_IN'&&(state.role==='admin'||state.role==='bom')) {
+      var bp=document.getElementById('page_bom');
+      if (bp&&bp.classList.contains('active')) unlockBOM();
     }
-  } else if (state.event === 'SIGNED_OUT') {
-    currentUser = null; isAdmin = false; residentUser = null;
-    updateUI();
-  } else if (state.event === 'SESSION_EXPIRED') {
-    currentUser = null; isAdmin = false; residentUser = null;
-    updateUI();
+  } else if (state.event==='SIGNED_OUT'||state.event==='SESSION_EXPIRED') {
+    currentUser=null;isAdmin=false;residentUser=null;
+    updateUI();lockBOMUI();
   }
 });
 
@@ -442,12 +435,13 @@ let members=[],notices=[];
 let assignments=JSON.parse(localStorage.getItem('st_assignments')||'{}');
 
 // ===== NAVIGATION =====
-function enterBOM(){hideSplash();if(!currentUser)showAuth();else switchTab('bom')}
-function enterResident(){hideSplash();if(!residentUser)showResidentAuth('login');else switchTab('resident')}
-function hideSplash(){const s=document.getElementById('splashScreen');s.classList.add('hidden');document.getElementById('siteHeader').style.display='flex';document.getElementById('mainTabs').style.display='flex';setTimeout(()=>s.style.display='none',800)}
+function enterBOM(){hideSplash();switchTab('bom');if(!SunAuth.isLoggedIn())showAuth()}
+function enterResident(){hideSplash();switchTab('resident');if(!residentUser)showResidentAuth('login')}
+function hideSplash(){const s=document.getElementById('splashScreen');s.classList.add('hidden');document.getElementById('siteHeader').style.display='flex';document.getElementById('mainTabs').style.display='flex';document.getElementById('bomSubNav').style.display='none';setTimeout(()=>s.style.display='none',800)}
 function goHome(){const s=document.getElementById('splashScreen');s.style.display='flex';s.classList.remove('hidden');document.getElementById('siteHeader').style.display='none';document.getElementById('mainTabs').style.display='none';document.getElementById('bomSubNav').style.display='none';document.getElementById('chatWidget').style.display='none'}
-function switchTab(t){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.getElementById('page_'+t).classList.add('active');const tabMap={bom:'tabBom',resident:'tabResident',policy:'tabPolicy',notices:'tabNotices'};document.getElementById(tabMap[t]).classList.add('active');document.getElementById('bomSubNav').style.display=t==='bom'?'flex':'none';document.getElementById('page_bom').className=t==='bom'?'page has-subnav active':'page';document.getElementById('chatWidget').style.display=(t==='resident'&&residentUser)?'block':'none';if(t==='bom'){if(currentUser)unlockBOM();else{document.getElementById('bomLocked').style.display='block';document.getElementById('bomContent').style.display='none'}}if(t==='resident'){if(residentUser){unlockResident()}else{document.getElementById('residentLocked').style.display='block';document.getElementById('residentContent').style.display='none'}}if(t==='notices')loadNotices();window.scrollTo(0,0)}
+function switchTab(t){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.getElementById('page_'+t).classList.add('active');const tabMap={bom:'tabBom',resident:'tabResident',policy:'tabPolicy',notices:'tabNotices'};document.getElementById(tabMap[t]).classList.add('active');document.getElementById('chatWidget').style.display=(t==='resident'&&residentUser)?'block':'none';if(t==='bom'){if(SunAuth.isLoggedIn()&&(SunAuth.isBOM()||SunAuth.isAdmin())){currentUser={email:SunAuth.getUserEmail(),id:SunAuth.getUserId()};isAdmin=SunAuth.isAdmin();document.getElementById('bomSubNav').style.display='flex';document.getElementById('page_bom').className='page has-subnav active';unlockBOM()}else{currentUser=null;lockBOMUI()}}else{document.getElementById('bomSubNav').style.display='none';document.getElementById('page_bom').className='page'}if(t==='resident'){if(residentUser){unlockResident()}else{document.getElementById('residentLocked').style.display='block';document.getElementById('residentContent').style.display='none'}}if(t==='notices')loadNotices();window.scrollTo(0,0)}
 function unlockBOM(){document.getElementById('bomLocked').style.display='none';document.getElementById('bomContent').style.display='block';loadMemDB();buildElectionTable();if(isAdmin){document.getElementById('bn_admin').style.display='';document.getElementById('adminLock').style.display='none';document.getElementById('adminPanel').style.display='block';popAccDrop();loadAdminMsgs();loadAdminProfile();loadRegRequests();loadApprovedResidents();buildAccountList();trackBOMLogin()}else{document.getElementById('bn_admin').style.display='none'}}
+function lockBOMUI(){document.getElementById('bomSubNav').style.display='none';document.getElementById('bomContent').style.display='none';document.getElementById('bomLocked').style.display='block';document.getElementById('page_bom').className='page active'}
 function showBom(s){document.querySelectorAll('.bom-sec').forEach(el=>el.style.display='none');document.querySelectorAll('.sub-nav a').forEach(a=>a.classList.remove('active'));const el=document.getElementById('bs_'+s);if(el)el.style.display='block';const nav=document.getElementById('bn_'+s);if(nav)nav.classList.add('active');if(s==='members')initMemForm();if(s==='allocate')initAlloc();if(s==='dashboard')genDash();if(s==='challenges')buildChallenges();if(s==='committees')buildCommittees();if(s==='projects'){buildProjDash()}if(s==='admin'&&isAdmin){loadRegRequests();loadApprovedResidents();loadAdminMsgs();buildAccountList()}window.scrollTo(0,0)}
 
 // ===== AUTH =====
@@ -469,7 +463,7 @@ const result=await SunAuth.resetPassword(e);
 if(result.error){err.textContent=result.error.message;err.style.display='block'}
 else{suc.textContent='Reset link sent to your email!';suc.style.display='block'}}
 function toggleAuthBtn(){if(currentUser)doLogout();else showAuth()}
-async function doLogout(){await SunAuth.logout();currentUser=null;isAdmin=false;residentUser=null;updateUI();goHome()}
+async function doLogout(){await SunAuth.logout();currentUser=null;isAdmin=false;residentUser=null;updateUI();lockBOMUI();goHome()}
 function updateUI(){const u=document.getElementById('headerUser'),b=document.getElementById('headerAuthBtn');if(currentUser){const role=SunAuth.getRole();const roleBadge=role==='admin'?'<span class="role-badge role-badge-admin">ADMIN</span>':role==='bom'?'<span class="role-badge role-badge-bom">BOM</span>':role==='resident'?'<span class="role-badge role-badge-resident">RESIDENT</span>':'';u.innerHTML=(currentUser.email||'')+' '+roleBadge;b.textContent='Logout'}else{u.innerHTML='';b.textContent='Login'}}
 
 // ===== MEMBERS =====

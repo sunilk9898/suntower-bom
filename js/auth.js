@@ -22,18 +22,27 @@ const SunAuth = (function() {
       return;
     }
 
-    // Listen for auth state changes
+    // Listen for auth state changes (including INITIAL_SESSION for newer SDK)
+    // IMPORTANT: _loadProfile uses direct fetch() to avoid Supabase client lock deadlock.
+    // We do NOT call _restoreSession separately — onAuthStateChange handles INITIAL_SESSION.
     supa.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event);
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        _user = session?.user || null;
-        if (_user) {
-          await _loadProfile();
-          _startSessionMonitor();
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        if (!session || !session.user) {
+          // Got auth event with no valid session — treat as signed out
+          _clearState();
+          if (_onAuthChange) {
+            _onAuthChange({ event: 'SIGNED_OUT', user: null, profile: null, role: null });
+          }
+          return;
         }
+        _user = session.user;
+        await _loadProfile();
+        _startSessionMonitor();
       } else if (event === 'SIGNED_OUT') {
         _clearState();
+        _purgeStoredTokens();
       }
 
       if (_onAuthChange) {
@@ -44,57 +53,99 @@ const SunAuth = (function() {
           role: _role
         });
       }
-    });
 
-    // Check for existing session
-    _restoreSession();
+      // Schedule server-side validation after the auth lock releases
+      // This runs getUser() to verify JWT with Supabase API
+      if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        setTimeout(() => _validateSession(), 100);
+      }
+    });
   }
 
-  // Restore existing session on page load
-  async function _restoreSession() {
-    if (!supa) return;
+  // Server-side session validation (runs after onAuthStateChange fires)
+  // Calls getUser() which contacts Supabase API to verify the JWT is still valid.
+  // If invalid, purges tokens and forces sign-out state.
+  // Note: This runs AFTER onAuthStateChange has already processed INITIAL_SESSION,
+  // so it acts as a secondary verification, not the primary session restore.
+  async function _validateSession() {
+    if (!supa || !_user) return;
     try {
-      const { data: { session }, error } = await supa.auth.getSession();
-      if (session && session.user) {
-        _user = session.user;
-        await _loadProfile();
-        _startSessionMonitor();
+      const { data: { user }, error } = await supa.auth.getUser();
+      if (error || !user) {
+        console.warn('SunAuth: server-side validation failed, clearing session');
+        _purgeStoredTokens();
+        _clearState();
+        await supa.auth.signOut({ scope: 'local' }).catch(() => {});
         if (_onAuthChange) {
-          _onAuthChange({
-            event: 'RESTORED',
-            user: _user,
-            profile: _profile,
-            role: _role
-          });
+          _onAuthChange({ event: 'SIGNED_OUT', user: null, profile: null, role: null });
         }
       }
     } catch (e) {
-      console.error('SunAuth: session restore error:', e);
+      console.warn('SunAuth: validation error:', e);
     }
   }
 
   // Load profile from Supabase
+  // IMPORTANT: Uses direct fetch() instead of supa.from() to avoid deadlock.
+  // The Supabase JS client holds an internal navigator.locks lock during
+  // onAuthStateChange callbacks. Calling supa.from().select() inside that
+  // callback causes a deadlock because the REST request waits for the lock
+  // to release, but the lock waits for the callback to finish.
   async function _loadProfile() {
-    if (!supa || !_user) return;
+    if (!_user) return;
     try {
-      const { data, error } = await supa.from('profiles')
-        .select('*')
-        .eq('id', _user.id)
-        .single();
+      // Get current access token from localStorage
+      const tokenKey = 'sb-ogkxlgyybnjnikntzfag-auth-token';
+      const stored = localStorage.getItem(tokenKey);
+      if (!stored) {
+        console.warn('SunAuth: no stored token for profile fetch');
+        return;
+      }
+      const tokenData = JSON.parse(stored);
+      const accessToken = tokenData.access_token;
+      if (!accessToken) {
+        console.warn('SunAuth: no access_token in stored session');
+        return;
+      }
 
-      if (data) {
-        _profile = data;
-        _role = data.role;
+      const url = SUPABASE_URL + '/rest/v1/profiles?select=*&id=eq.' + _user.id;
+      const resp = await fetch(url, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!resp.ok) {
+        console.warn('SunAuth: profile fetch HTTP', resp.status);
+        return;
+      }
+
+      const rows = await resp.json();
+      if (rows && rows.length > 0) {
+        _profile = rows[0];
+        _role = rows[0].role;
+        console.log('SunAuth: profile loaded, role =', _role);
       } else {
-        // Profile might not exist yet (trigger delay), retry once
+        // Profile might not exist yet (trigger delay), retry once after 1s
         await new Promise(r => setTimeout(r, 1000));
-        const retry = await supa.from('profiles')
-          .select('*')
-          .eq('id', _user.id)
-          .single();
-        if (retry.data) {
-          _profile = retry.data;
-          _role = retry.data.role;
+        const resp2 = await fetch(url, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        if (resp2.ok) {
+          const rows2 = await resp2.json();
+          if (rows2 && rows2.length > 0) {
+            _profile = rows2[0];
+            _role = rows2[0].role;
+            console.log('SunAuth: profile loaded (retry), role =', _role);
+          }
         }
       }
     } catch (e) {
@@ -130,12 +181,17 @@ const SunAuth = (function() {
     }
   }
 
-  // Logout
+  // Logout — scope:'global' invalidates refresh token server-side
   async function logout() {
     if (!supa) return;
     SunAudit.log('logout', 'auth', null, { email: _user?.email });
     _stopSessionMonitor();
-    await supa.auth.signOut();
+    try {
+      await supa.auth.signOut({ scope: 'global' });
+    } catch (e) {
+      console.warn('SunAuth: signOut error (continuing cleanup):', e);
+    }
+    _purgeStoredTokens();
     _clearState();
   }
 
@@ -207,6 +263,26 @@ const SunAuth = (function() {
     _profile = null;
     _role = null;
     _stopSessionMonitor();
+  }
+
+  // Purge all Supabase auth tokens from localStorage
+  // Keys follow pattern: sb-<project-ref>-auth-token
+  function _purgeStoredTokens() {
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.includes('-auth-token')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      if (keysToRemove.length > 0) {
+        console.log('SunAuth: purged', keysToRemove.length, 'stored auth tokens');
+      }
+    } catch (e) {
+      console.warn('SunAuth: token purge error:', e);
+    }
   }
 
   // Role check helpers
