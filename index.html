@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260221h">
+<link rel="stylesheet" href="css/style.css?v=20260221i">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260221h"></script>
-<script src="js/audit.js?v=20260221h"></script>
-<script src="js/auth.js?v=20260221h"></script>
-<script src="js/data.js?v=20260221h"></script>
+<script src="js/supabase-config.js?v=20260221i"></script>
+<script src="js/audit.js?v=20260221i"></script>
+<script src="js/auth.js?v=20260221i"></script>
+<script src="js/data.js?v=20260221i"></script>
 </head>
 <body>
 
@@ -289,7 +289,7 @@
           <div class="auth-error" id="accErr" style="margin-top:10px"></div>
           <div id="accSuccessCard" style="margin-top:10px"></div>
         </div>
-        <div class="admin-section" style="border-color:var(--primary);background:#e8eaf6"><h3 style="color:var(--primary);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128100; BOM Accounts <button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:0.75rem" onclick="buildAccountList()">&#8635; Refresh</button></h3>
+        <div class="admin-section" style="border-color:var(--primary);background:#e8eaf6"><h3 style="color:var(--primary);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128100; BOM Accounts <span><button class="btn btn-sm" style="background:#00695c;color:#fff;font-size:0.75rem;margin-right:6px" onclick="syncAllAccountsToAuth()" title="Create Supabase Auth users for all BOM + Resident accounts that don't have one yet">&#128260; Sync to Auth</button><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:0.75rem" onclick="buildAccountList()">&#8635; Refresh</button></span></h3><div id="syncStatus" style="display:none;padding:8px 12px;margin-bottom:10px;border-radius:8px;font-size:0.85rem"></div>
           <div id="acctDashArea"></div>
         </div>
         <div class="admin-section"><h3>&#128196; Upload Notice</h3>
@@ -641,34 +641,78 @@ function exportCSV(){const vm=members.filter(m=>m&&m.name);let csv='ID,Category,
 // ===== ADMIN =====
 function popAccDrop(){const s=document.getElementById('accName');if(!s)return;s.innerHTML='<option value="">--</option>';EM.forEach(m=>{s.innerHTML+=`<option>${m.name} (${m.flat})</option>`})}
 async function createAccount(){const e=document.getElementById('accEmail').value.trim(),p=document.getElementById('accPass').value,n=document.getElementById('accName').value,err=document.getElementById('accErr'),scArea=document.getElementById('accSuccessCard');err.style.display='none';scArea.innerHTML='';if(!e||!p||p.length<6){err.textContent='Valid email & password (6+ chars) required';err.style.display='block';return}
-// Create BOM account via Supabase (admin creates user via Edge Function or direct)
+// Create BOM account via Supabase Admin API
 try{
-  const session=await supa.auth.getSession();
-  const token=session.data.session?.access_token;
-  // Try Edge Function first (preferred — uses service_role)
-  const resp=await fetch(SUPABASE_URL+'/functions/v1/approve-resident',{
-    method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-    body:JSON.stringify({request_id:null,create_bom:true,email:e,password:p,name:n,role:'bom'})
-  }).catch(()=>null);
-  if(resp&&resp.ok){
-    const result=await resp.json();
-    saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p);
-    SunAudit.log('create_account','account',null,{email:e,name:n,role:'bom'});
-  }else{
-    // Fallback: store in localStorage + KV (legacy mode)
-    const u=JSON.parse(localStorage.getItem('st_users')||'{}');u[e]=p;
-    localStorage.setItem('st_users',JSON.stringify(u));supaSync('st_users');
-    saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p);
-    SunAudit.log('create_account','account',null,{email:e,name:n,role:'bom',mode:'legacy'});
+  const dispName=n||e;
+  const flat=(n.match(/\(([^)]+)\)/)||[])[1]||'';
+  err.textContent='Creating account...';err.style.display='block';err.style.color='#1565c0';
+  const result=await createSupabaseUser(e,p,'bom',{display_name:dispName,flat_no:flat});
+  err.style.display='none';err.style.color='';
+  if(!result.ok){
+    err.textContent='Account creation failed: '+(result.error||'Unknown error');err.style.display='block';err.style.color='';return;
   }
-}catch(x){err.textContent=x.message||'Account creation failed';err.style.display='block'}}
+  // Also store in localStorage for admin panel display
+  const u=JSON.parse(localStorage.getItem('st_users')||'{}');u[e]=p;
+  localStorage.setItem('st_users',JSON.stringify(u));supaSync('st_users');
+  saveBOMAcctMeta(n,e,p);showAcctSuccessCard(n,e,p);
+  SunAudit.log('create_account','account',null,{email:e,name:n,role:'bom',supabase:true});
+}catch(x){err.textContent=x.message||'Account creation failed';err.style.display='block';err.style.color=''}}
 function saveBOMAcctMeta(name,email,pass){const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const dup=accts.find(a=>a.email.toLowerCase()===email.toLowerCase());if(dup){dup.name=name||dup.name;dup.password=pass;dup.updatedAt=new Date().toISOString();dup.lastReset=new Date().toISOString()}else{const flat=(name.match(/\(([^)]+)\)/)||[])[1]||'';accts.push({id:'BOM_'+Date.now(),name:name,email:email.toLowerCase(),password:pass,flat:flat,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),lastLogin:null,status:'never'})}localStorage.setItem('st_bom_accounts',JSON.stringify(accts));supaSync('st_bom_accounts');buildAccountList()}
 function showAcctSuccessCard(name,email,pass){const area=document.getElementById('accSuccessCard');const dispName=name||email;const credText=`BOM Portal Login\nName: ${dispName}\nEmail: ${email}\nPassword: ${pass}\nURL: https://suntower.in`;const wpText=encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${dispName},\n\nYour BOM account has been created:\n📧 Email: ${email}\n🔑 Password: ${pass}\n🔗 URL: https://suntower.in\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);area.innerHTML=`<div class="acct-success-card"><h4>&#9989; Account Created Successfully</h4><dl class="acct-success-detail"><dt>Member</dt><dd><strong>${dispName}</strong></dd><dt>Email</dt><dd>${email}</dd><dt>Password</dt><dd><code style="background:#fff;padding:2px 8px;border-radius:4px;font-weight:700;color:#1a237e">${pass}</code></dd></dl><div class="acct-copy-bar"><button class="acct-copy-btn acct-copy-btn-cred" onclick="copyAcctCred('${credText.replace(/'/g,"\\'")}')">&#128203; Copy Credentials</button><button class="acct-copy-btn acct-copy-btn-wp" onclick="window.open('https://wa.me/?text=${wpText}','_blank')">&#128172; Share via WhatsApp</button><button class="acct-copy-btn acct-copy-btn-dismiss" onclick="this.closest('.acct-success-card').remove()">&#10005; Dismiss</button></div></div>`;document.getElementById('accEmail').value='';document.getElementById('accPass').value='';document.getElementById('accName').selectedIndex=0}
 function copyAcctCred(text){navigator.clipboard.writeText(text.replace(/\\n/g,'\n')).then(()=>{const btns=document.querySelectorAll('.acct-copy-btn-cred');btns.forEach(b=>{b.textContent='✓ Copied!';setTimeout(()=>{b.innerHTML='&#128203; Copy Credentials'},2000)})}).catch(()=>{prompt('Copy credentials:',text.replace(/\\n/g,'\n'))})}
 function buildAccountList(){const area=document.getElementById('acctDashArea');if(!area)return;const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const users=JSON.parse(localStorage.getItem('st_users')||'{}');const totalAccts=accts.length;const activeAccts=accts.filter(a=>a.lastLogin).length;const neverLogged=totalAccts-activeAccts;let h=`<div class="acct-summary-bar"><div class="acct-summary-item"><div class="acct-sum-val">${totalAccts}</div><div class="acct-sum-lbl">Total Accounts</div></div><div class="acct-summary-item" style="border-top-color:#2e7d32"><div class="acct-sum-val" style="color:#2e7d32">${activeAccts}</div><div class="acct-sum-lbl">Active (Logged In)</div></div><div class="acct-summary-item" style="border-top-color:#e65100"><div class="acct-sum-val" style="color:#e65100">${neverLogged}</div><div class="acct-sum-lbl">Never Logged In</div></div></div>`;if(!accts.length){h+=`<div class="acct-empty"><div class="acct-empty-icon">&#128100;</div><p>No BOM accounts created yet.<br>Use the form above to create accounts for BOM members.</p></div>`;area.innerHTML=h;return}h+=`<table class="acct-table"><tr><th>#</th><th>Member</th><th>Email</th><th>Password</th><th>Created</th><th>Status</th><th>Actions</th></tr>`;accts.forEach((a,i)=>{const dt=a.createdAt?new Date(a.createdAt).toLocaleDateString():'—';const statusCls=a.lastLogin?'acct-status-active':'acct-status-never';const statusTxt=a.lastLogin?'Active':'Never Logged In';const pw=a.password||users[a.email]||'—';const credText=`BOM Portal Login\\nName: ${(a.name||'').replace(/'/g,"\\'")}\\nEmail: ${a.email}\\nPassword: ${pw}\\nURL: https://suntower.in`;const wpText=encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${a.name||a.email},\n\nYour BOM account:\n📧 Email: ${a.email}\n🔑 Password: ${pw}\n🔗 URL: https://suntower.in\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);h+=`<tr><td>${i+1}</td><td><strong>${a.name||'—'}</strong>${a.flat?'<br><span style="font-size:0.72rem;color:#999">'+a.flat+'</span>':''}</td><td style="font-size:0.8rem">${a.email}</td><td><span class="acct-pw-reveal" title="Click to copy" onclick="navigator.clipboard.writeText('${pw}');this.textContent='Copied!';setTimeout(()=>{this.textContent='${pw}'},1500)">${pw}</span></td><td style="font-size:0.8rem">${dt}</td><td><span class="acct-status ${statusCls}"><span class="acct-status-dot"></span> ${statusTxt}</span></td><td><div class="acct-action-group"><button class="btn btn-sm" style="background:var(--primary);color:#fff" onclick="copyAcctCred('${credText}')" title="Copy">&#128203;</button><button class="btn btn-sm" style="background:#25d366;color:#fff" onclick="window.open('https://wa.me/?text=${wpText}','_blank')" title="WhatsApp">&#128172;</button><button class="btn btn-sm" style="background:#e65100;color:#fff" onclick="editBOMAccount('${a.id}')" title="Edit">&#9998;</button><button class="btn btn-sm btn-danger" onclick="deleteBOMAccount('${a.id}')" title="Delete">&#128465;</button></div></td></tr>`});h+=`</table>`;area.innerHTML=h}
 function editBOMAccount(id){const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const a=accts.find(x=>x.id===id);if(!a)return;document.getElementById('mTitle').textContent='Edit BOM Account';const lastLogin=a.lastLogin?new Date(a.lastLogin).toLocaleString():'Never';const created=a.createdAt?new Date(a.createdAt).toLocaleString():'—';const updated=a.updatedAt?new Date(a.updatedAt).toLocaleString():'—';document.getElementById('mBody').innerHTML=`<div class="acct-edit-form"><div class="acct-edit-row"><div class="form-group"><label>Member Name</label><input type="text" class="form-control" id="editAcctName" value="${a.name||''}"></div><div class="form-group"><label>Flat Number</label><input type="text" class="form-control" id="editAcctFlat" value="${a.flat||''}" style="text-transform:uppercase"></div></div><div class="form-group"><label>Email</label><input type="email" class="form-control" id="editAcctEmail" value="${a.email||''}"></div><div class="acct-edit-row"><div class="form-group"><label>Password</label><input type="text" class="form-control" id="editAcctPass" value="${a.password||''}"></div><div class="form-group"><label>Status</label><select class="form-control" id="editAcctStatus"><option value="never" ${a.status!=='active'?'selected':''}>Never Logged In</option><option value="active" ${a.status==='active'?'selected':''}>Active</option></select></div></div><div class="acct-edit-meta"><strong>Account ID:</strong> ${a.id}<br><strong>Created:</strong> ${created}<br><strong>Last Updated:</strong> ${updated}<br><strong>Last Login:</strong> ${lastLogin}</div><div class="acct-edit-actions"><button class="btn btn-primary" onclick="saveBOMAccountEdit('${a.id}')">&#128190; Save Changes</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>`;document.getElementById('noticeModal').classList.remove('hidden')}
-function saveBOMAccountEdit(id){const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const idx=accts.findIndex(x=>x.id===id);if(idx===-1){alert('Account not found');return}const name=document.getElementById('editAcctName').value.trim();const flat=document.getElementById('editAcctFlat').value.trim().toUpperCase();const email=document.getElementById('editAcctEmail').value.trim().toLowerCase();const pass=document.getElementById('editAcctPass').value;const status=document.getElementById('editAcctStatus').value;if(!email){alert('Email is required');return}if(pass&&pass.length<6){alert('Password must be at least 6 characters');return}const oldEmail=accts[idx].email;accts[idx].name=name;accts[idx].flat=flat;accts[idx].email=email;if(pass)accts[idx].password=pass;accts[idx].status=status;accts[idx].updatedAt=new Date().toISOString();localStorage.setItem('st_bom_accounts',JSON.stringify(accts));supaSync('st_bom_accounts');const users=JSON.parse(localStorage.getItem('st_users')||'{}');if(oldEmail!==email){delete users[oldEmail]}if(pass)users[email]=pass;localStorage.setItem('st_users',JSON.stringify(users));supaSync('st_users');closeModal();buildAccountList()}
+async function saveBOMAccountEdit(id){const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const idx=accts.findIndex(x=>x.id===id);if(idx===-1){alert('Account not found');return}const name=document.getElementById('editAcctName').value.trim();const flat=document.getElementById('editAcctFlat').value.trim().toUpperCase();const email=document.getElementById('editAcctEmail').value.trim().toLowerCase();const pass=document.getElementById('editAcctPass').value;const status=document.getElementById('editAcctStatus').value;if(!email){alert('Email is required');return}if(pass&&pass.length<6){alert('Password must be at least 6 characters');return}
+  // Sync password to Supabase Auth if changed
+  if(pass){
+    try{
+      const listResp=await fetch(SUPABASE_URL+'/auth/v1/admin/users?page=1&per_page=200',{
+        headers:{'Authorization':'Bearer '+SUPABASE_SERVICE_KEY,'apikey':SUPABASE_SERVICE_KEY}
+      });
+      if(listResp.ok){
+        const listData=await listResp.json();
+        const authUser=(listData.users||[]).find(u=>u.email&&u.email.toLowerCase()===accts[idx].email.toLowerCase());
+        if(authUser){
+          const pwResult=await updateAuthPassword(authUser.id,pass);
+          if(!pwResult.ok){alert('Warning: Password not updated in auth system: '+(pwResult.error||''));return}
+        }
+      }
+    }catch(e){console.warn('saveBOMAccountEdit: auth sync error',e)}
+  }
+  const oldEmail=accts[idx].email;accts[idx].name=name;accts[idx].flat=flat;accts[idx].email=email;if(pass)accts[idx].password=pass;accts[idx].status=status;accts[idx].updatedAt=new Date().toISOString();localStorage.setItem('st_bom_accounts',JSON.stringify(accts));supaSync('st_bom_accounts');const users=JSON.parse(localStorage.getItem('st_users')||'{}');if(oldEmail!==email){delete users[oldEmail]}if(pass)users[email]=pass;localStorage.setItem('st_users',JSON.stringify(users));supaSync('st_users');closeModal();buildAccountList()}
 function deleteBOMAccount(id){const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const a=accts.find(x=>x.id===id);if(!a)return;if(!confirm(`Delete account for ${a.name||a.email}?\n\nThis will remove the account from the dashboard.\nThe login credentials in the system will also be removed.`))return;const idx=accts.findIndex(x=>x.id===id);accts.splice(idx,1);localStorage.setItem('st_bom_accounts',JSON.stringify(accts));supaSync('st_bom_accounts');const users=JSON.parse(localStorage.getItem('st_users')||'{}');delete users[a.email];localStorage.setItem('st_users',JSON.stringify(users));supaSync('st_users');buildAccountList()}
+async function syncAllAccountsToAuth(){
+  const statusDiv=document.getElementById('syncStatus');
+  statusDiv.style.display='block';statusDiv.style.background='#e3f2fd';statusDiv.style.color='#1565c0';
+  statusDiv.innerHTML='&#9203; Syncing accounts to Supabase Auth...';
+  let created=0,existed=0,failed=0,errors=[];
+  // 1. Sync BOM accounts
+  const bomAccts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');
+  const bomUsers=JSON.parse(localStorage.getItem('st_users')||'{}');
+  for(const a of bomAccts){
+    const pw=a.password||bomUsers[a.email]||'Sun'+((a.flat||'BOM').replace('-',''))+'!';
+    statusDiv.innerHTML=`&#9203; Syncing BOM: ${a.email}...`;
+    const r=await createSupabaseUser(a.email,pw,'bom',{display_name:a.name||'',flat_no:a.flat||''});
+    if(r.ok){if(r.existed){existed++}else{created++}}else{failed++;errors.push(a.email+': '+r.error)}
+  }
+  // 2. Sync Resident accounts
+  const resAccts=JSON.parse(localStorage.getItem('st_residents')||'[]').filter(r=>r.status==='approved');
+  const resUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
+  for(const r of resAccts){
+    const pw=resUsers[r.email?.toLowerCase()]||r.tempPass||'Sun'+((r.flatNo||'User').replace('-',''))+'!';
+    if(!r.email)continue;
+    statusDiv.innerHTML=`&#9203; Syncing Resident: ${r.email}...`;
+    const res=await createSupabaseUser(r.email,pw,'resident',{display_name:r.ownerName||'',flat_no:r.flatNo||'',mobile:r.mobile||''});
+    if(res.ok){if(res.existed){existed++}else{created++}}else{failed++;errors.push(r.email+': '+res.error)}
+  }
+  // Show results
+  let msg=`&#9989; Sync complete: ${created} created, ${existed} already existed, ${failed} failed`;
+  if(errors.length)msg+=`<br><small style="color:#b71c1c">Errors: ${errors.join(', ')}</small>`;
+  statusDiv.style.background=failed?'#fff3e0':'#e8f5e9';
+  statusDiv.style.color=failed?'#e65100':'#2e7d32';
+  statusDiv.innerHTML=msg;
+  buildAccountList();loadApprovedResidents();
+}
 function trackBOMLogin(){if(!currentUser||!currentUser.email)return;const accts=JSON.parse(localStorage.getItem('st_bom_accounts')||'[]');const idx=accts.findIndex(a=>a.email.toLowerCase()===currentUser.email.toLowerCase());if(idx!==-1){accts[idx].lastLogin=new Date().toISOString();accts[idx].status='active';localStorage.setItem('st_bom_accounts',JSON.stringify(accts));supaSync('st_bom_accounts')}}
 function loadAdminMsgs(){const c=document.getElementById('adminMsgs');if(db){db.collection('messages').orderBy('timestamp','desc').limit(20).get().then(s=>{if(s.empty){c.innerHTML='<p>No messages.</p>';return}let h='<table><tr><th>Date</th><th>From</th><th>Message</th></tr>';s.forEach(d=>{const x=d.data();h+=`<tr><td>${x.date||''}</td><td>${x.name||'Anon'}</td><td>${x.message}</td></tr>`});h+='</table>';c.innerHTML=h}).catch(()=>{loadLocalMsgs(c)})}else loadLocalMsgs(c)}
 function loadLocalMsgs(c){const m=JSON.parse(localStorage.getItem('st_messages')||'[]');if(!m.length){c.innerHTML='<p>No messages.</p>';return}let h='<table><tr><th>Date</th><th>Message</th></tr>';m.forEach(x=>{h+=`<tr><td>${x.date||''}</td><td>${x.message}</td></tr>`});h+='</table>';c.innerHTML=h}
@@ -772,29 +816,44 @@ async function approveResident(id){
   const readPerm=document.getElementById('perm_r_'+id)?.checked??true;
   const writePerm=document.getElementById('perm_w_'+id)?.checked??false;
   try{
-    const session=await supa.auth.getSession();
-    const token=session.data.session?.access_token;
-    // Call Edge Function to create auth user securely
-    const resp=await fetch(SUPABASE_URL+'/functions/v1/approve-resident',{
-      method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({request_id:id,permissions:{read:readPerm,write:writePerm}})
-    });
-    if(resp.ok){
-      const result=await resp.json();
-      // Also update localStorage for admin panel display
-      const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');
-      const idx=residents.findIndex(r=>r.id===id);
-      if(idx!==-1){residents[idx].status='approved';residents[idx].permissions={read:readPerm,write:writePerm};residents[idx].approvedDate=new Date().toISOString();residents[idx].tempPass=result.temp_password;localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');}
-      alert('APPROVED!\n\nResident: '+result.name+'\nFlat: '+result.flat_no+'\nEmail: '+result.email+'\n\nLogin Password: '+result.temp_password+'\n\nShare this password with the resident.');
-    }else{
-      let errMsg='Unknown error';
-      try{const err=await resp.json();errMsg=err.error||JSON.stringify(err);}catch(e){errMsg='HTTP '+resp.status;}
-      if(resp.status===404){
-        alert('APPROVAL FAILED\n\nThe approve-resident Edge Function is not deployed.\nPlease deploy it using Supabase CLI:\n\n  supabase functions deploy approve-resident\n\nOr create the resident user manually via Supabase Dashboard > Authentication > Users.');
-      }else{
-        alert('APPROVAL FAILED\n\nError: '+errMsg+'\n\nPlease try again or create the user manually via Supabase Dashboard.');
-      }
+    // Find the registration request data
+    let reqData=null;
+    // Check Supabase registration_requests
+    try{
+      const sbReqs=await SunData.getRegistrationRequests('pending');
+      reqData=sbReqs.find(r=>r.id===id);
+      if(reqData){reqData={email:reqData.email,ownerName:reqData.owner_name,flatNo:reqData.flat_no,mobile:reqData.mobile,source:'supabase'};}
+    }catch(e){}
+    // Check localStorage
+    if(!reqData){
+      const lsResidents=JSON.parse(localStorage.getItem('st_residents')||'[]');
+      const lsReq=lsResidents.find(r=>r.id===id);
+      if(lsReq){reqData={email:lsReq.email,ownerName:lsReq.ownerName,flatNo:lsReq.flatNo,mobile:lsReq.mobile,source:'local'};}
     }
+    if(!reqData||!reqData.email){alert('Registration request not found');return}
+    // Generate temp password: Sun + FlatNo (no dash) + !
+    const tempPass='Sun'+(reqData.flatNo||'User').replace(/-/g,'')+'!';
+    // Create Supabase Auth user directly via Admin API
+    const result=await createSupabaseUser(reqData.email,tempPass,'resident',{
+      display_name:reqData.ownerName||'',flat_no:reqData.flatNo||'',mobile:reqData.mobile||''
+    });
+    if(!result.ok){
+      alert('APPROVAL FAILED\n\nCould not create auth user: '+(result.error||'Unknown error'));
+      loadRegRequests();return;
+    }
+    // Update registration request status in Supabase
+    if(reqData.source==='supabase'){
+      try{await SunData.updateRegistrationRequest(id,{status:'approved'});}catch(e){console.warn('Could not update request status:',e);}
+    }
+    // Also update localStorage for admin panel display
+    const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');
+    const idx=residents.findIndex(r=>r.id===id);
+    if(idx!==-1){residents[idx].status='approved';residents[idx].permissions={read:readPerm,write:writePerm};residents[idx].approvedDate=new Date().toISOString();residents[idx].tempPass=tempPass;localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');}
+    // Also store in st_res_users for display
+    const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');
+    rUsers[reqData.email.toLowerCase()]=tempPass;
+    localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');
+    alert('APPROVED!\n\nResident: '+(reqData.ownerName||reqData.email)+'\nFlat: '+(reqData.flatNo||'')+'\nEmail: '+reqData.email+'\n\nLogin Password: '+tempPass+'\n\nShare this password with the resident.');
     loadRegRequests();loadApprovedResidents();
   }catch(x){alert('Error: '+x.message)}}
 
@@ -885,6 +944,61 @@ function editResidentAccount(id){
     </div>
   </div>`;
   document.getElementById('noticeModal').classList.remove('hidden');
+}
+
+// Create a Supabase Auth user directly via Admin API (replaces Edge Function)
+async function createSupabaseUser(email, password, role, metadata){
+  try{
+    // 1. Create auth user
+    const resp=await fetch(SUPABASE_URL+'/auth/v1/admin/users',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+SUPABASE_SERVICE_KEY,'apikey':SUPABASE_SERVICE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        email:email.trim().toLowerCase(),
+        password:password,
+        email_confirm:true,
+        user_metadata:{role:role,display_name:metadata.display_name||'',flat_no:metadata.flat_no||''}
+      })
+    });
+    if(resp.status===422){
+      // User already exists — try to update password instead
+      const listResp=await fetch(SUPABASE_URL+'/auth/v1/admin/users?page=1&per_page=200',{
+        headers:{'Authorization':'Bearer '+SUPABASE_SERVICE_KEY,'apikey':SUPABASE_SERVICE_KEY}
+      });
+      if(listResp.ok){
+        const listData=await listResp.json();
+        const existing=(listData.users||[]).find(u=>u.email&&u.email.toLowerCase()===email.trim().toLowerCase());
+        if(existing){
+          await updateAuthPassword(existing.id,password);
+          // Update profile
+          await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+existing.id,{
+            method:'PATCH',
+            headers:{'Authorization':'Bearer '+SUPABASE_SERVICE_KEY,'apikey':SUPABASE_SERVICE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+            body:JSON.stringify({display_name:metadata.display_name||'',flat_no:metadata.flat_no||'',mobile:metadata.mobile||'',role:role,status:'active'})
+          });
+          return {ok:true,userId:existing.id,existed:true};
+        }
+      }
+      return {ok:false,error:'User already exists but could not be found'};
+    }
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      return {ok:false,error:err.msg||'HTTP '+resp.status};
+    }
+    const userData=await resp.json();
+    const userId=userData.id;
+    // 2. Wait for profile trigger then update profile
+    await new Promise(r=>setTimeout(r,1500));
+    await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+userId,{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+SUPABASE_SERVICE_KEY,'apikey':SUPABASE_SERVICE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+      body:JSON.stringify({display_name:metadata.display_name||'',flat_no:metadata.flat_no||'',mobile:metadata.mobile||'',role:role,status:'active'})
+    });
+    return {ok:true,userId:userId,existed:false};
+  }catch(e){
+    console.error('createSupabaseUser error:',e);
+    return {ok:false,error:e.message};
+  }
 }
 
 // Update Supabase Auth password for a user (admin operation)
