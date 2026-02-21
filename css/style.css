@@ -678,3 +678,11 @@ details[open] summary { margin-bottom: 8px; }
   .dir-stat-card { min-width: 70px; padding: 8px 10px; }
   .dir-stat-card .stat-num { font-size: 1.2rem; }
 }
+
+/* ========== MANAGE RESIDENTS ========== */
+.mgr-form-card { background: #fff; border: 2px solid #1565c0; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: var(--shadow); }
+.mgr-form-card h4 { font-size: 1rem; margin-bottom: 12px; }
+.mgr-form-card .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+@media (max-width: 600px) {
+  .mgr-form-card .grid-2 { grid-template-columns: 1fr; }
+}

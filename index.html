@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260221b">
+<link rel="stylesheet" href="css/style.css?v=20260221c">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260221b"></script>
-<script src="js/audit.js?v=20260221b"></script>
-<script src="js/auth.js?v=20260221b"></script>
-<script src="js/data.js?v=20260221b"></script>
+<script src="js/supabase-config.js?v=20260221c"></script>
+<script src="js/audit.js?v=20260221c"></script>
+<script src="js/auth.js?v=20260221c"></script>
+<script src="js/data.js?v=20260221c"></script>
 </head>
 <body>
 
@@ -306,6 +306,22 @@
         <div class="admin-section" style="border-color:#004d40;background:#e0f2f1"><h3 style="color:#004d40">&#9989; Approved Residents</h3>
           <div id="approvedResidentsArea"><p style="color:var(--text-light)">Loading...</p></div>
         </div>
+        <div class="admin-section" style="border-color:#1565c0;background:#e3f2fd"><h3 style="color:#1565c0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128221; Manage Resident Data <button class="btn btn-sm" style="background:#1565c0;color:#fff;font-size:0.75rem" onclick="loadManageResidents()">&#8635; Refresh</button></h3>
+          <p style="font-size:0.82rem;color:#555;margin-bottom:12px">Add, edit, or search resident records. Changes sync to Supabase profiles.</p>
+          <div style="display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap">
+            <button class="btn btn-sm" style="background:#1565c0;color:#fff" onclick="showAddResidentForm()">&#10133; Add Resident</button>
+            <input type="text" class="form-control" id="mgrSearchInput" placeholder="Search by name, flat, email, tower..." oninput="filterManagedResidents()" style="flex:1;min-width:200px;padding:8px 12px;font-size:0.85rem">
+            <select class="form-control" id="mgrTowerFilter" onchange="filterManagedResidents()" style="width:auto;padding:8px 12px;font-size:0.85rem">
+              <option value="">All Towers</option>
+              <option>STA1</option><option>STA2</option><option>STB1</option><option>STB2</option>
+              <option>STC1</option><option>STC2</option><option>STD1</option><option>STD2</option>
+            </select>
+          </div>
+          <div id="addResidentFormArea" style="display:none"></div>
+          <div id="editResidentFormArea" style="display:none"></div>
+          <div id="mgrResidentsStats" style="margin-bottom:12px"></div>
+          <div id="mgrResidentsArea"><p style="color:var(--text-light)">Loading...</p></div>
+        </div>
         <div class="admin-section"><h3>&#128172; Resident Messages</h3><div id="adminMsgs"><p style="color:var(--text-light)">Loading...</p></div></div>
         <div class="admin-section" style="border-color:#b71c1c;background:#fce4ec"><h3 style="color:#b71c1c;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128270; Security Audit Log <button class="btn btn-sm" style="background:#b71c1c;color:#fff;font-size:0.75rem" onclick="SunAudit.buildAuditViewer('auditLogArea')">&#8635; Load Audit Log</button></h3>
           <div id="auditLogArea"><p style="color:#999;text-align:center;padding:15px">Click "Load Audit Log" to view security events.</p></div>
@@ -478,7 +494,7 @@ function goHome(){const s=document.getElementById('splashScreen');s.style.displa
 function switchTab(t){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));document.getElementById('page_'+t).classList.add('active');const tabMap={bom:'tabBom',resident:'tabResident',policy:'tabPolicy',notices:'tabNotices'};document.getElementById(tabMap[t]).classList.add('active');document.getElementById('chatWidget').style.display=(t==='resident'&&residentUser)?'block':'none';if(t==='bom'){if(SunAuth.isLoggedIn()&&(SunAuth.isBOM()||SunAuth.isAdmin())){currentUser={email:SunAuth.getUserEmail(),id:SunAuth.getUserId()};isAdmin=SunAuth.isAdmin();document.getElementById('bomSubNav').style.display='flex';document.getElementById('page_bom').className='page has-subnav active';unlockBOM()}else{currentUser=null;lockBOMUI()}}else{document.getElementById('bomSubNav').style.display='none';document.getElementById('page_bom').className='page'}if(t==='resident'){if(residentUser){unlockResident()}else{document.getElementById('residentLocked').style.display='block';document.getElementById('residentContent').style.display='none'}}if(t==='notices')loadNotices();window.scrollTo(0,0)}
 function unlockBOM(){document.getElementById('bomLocked').style.display='none';document.getElementById('bomContent').style.display='block';loadMemDB();buildElectionTable();loadResidentData();if(isAdmin){document.getElementById('bn_admin').style.display='';document.getElementById('adminLock').style.display='none';document.getElementById('adminPanel').style.display='block';popAccDrop();loadAdminMsgs();loadAdminProfile();loadRegRequests();loadApprovedResidents();buildAccountList();trackBOMLogin()}else{document.getElementById('bn_admin').style.display='none'}}
 function lockBOMUI(){document.getElementById('bomSubNav').style.display='none';document.getElementById('bomContent').style.display='none';document.getElementById('bomLocked').style.display='block';document.getElementById('page_bom').className='page active'}
-function showBom(s){document.querySelectorAll('.bom-sec').forEach(el=>el.style.display='none');document.querySelectorAll('.sub-nav a').forEach(a=>a.classList.remove('active'));const el=document.getElementById('bs_'+s);if(el)el.style.display='block';const nav=document.getElementById('bn_'+s);if(nav)nav.classList.add('active');if(s==='members')initMemForm();if(s==='allocate')initAlloc();if(s==='dashboard')genDash();if(s==='challenges')buildChallenges();if(s==='committees')buildCommittees();if(s==='projects'){buildProjDash()}if(s==='directory')initDirectory();if(s==='admin'&&isAdmin){loadRegRequests();loadApprovedResidents();loadAdminMsgs();buildAccountList()}window.scrollTo(0,0)}
+function showBom(s){document.querySelectorAll('.bom-sec').forEach(el=>el.style.display='none');document.querySelectorAll('.sub-nav a').forEach(a=>a.classList.remove('active'));const el=document.getElementById('bs_'+s);if(el)el.style.display='block';const nav=document.getElementById('bn_'+s);if(nav)nav.classList.add('active');if(s==='members')initMemForm();if(s==='allocate')initAlloc();if(s==='dashboard')genDash();if(s==='challenges')buildChallenges();if(s==='committees')buildCommittees();if(s==='projects'){buildProjDash()}if(s==='directory')initDirectory();if(s==='admin'&&isAdmin){loadRegRequests();loadApprovedResidents();loadManageResidents();loadAdminMsgs();buildAccountList()}window.scrollTo(0,0)}
 
 // ===== AUTH =====
 function showAuth(){document.getElementById('authOverlay').classList.remove('hidden');document.getElementById('loginForm').style.display='block';document.getElementById('forgotForm').style.display='none'}
@@ -785,6 +801,280 @@ async function resetResPass(id){
   }catch(x){alert('Error: '+x.message)}}
 
 function revokeResident(id){if(!confirm('Revoke access for this resident? They will no longer be able to login.'))return;const residents=JSON.parse(localStorage.getItem('st_residents')||'[]');const idx=residents.findIndex(r=>r.id===id);if(idx===-1)return;const email=residents[idx].email.toLowerCase();residents.splice(idx,1);localStorage.setItem('st_residents',JSON.stringify(residents));supaSync('st_residents');const rUsers=JSON.parse(localStorage.getItem('st_res_users')||'{}');delete rUsers[email];localStorage.setItem('st_res_users',JSON.stringify(rUsers));supaSync('st_res_users');if(db)db.collection('residents').doc(id).delete().catch(()=>{});loadApprovedResidents()}
+
+// ===== MANAGE RESIDENT DATA =====
+let _allManagedResidents=[];
+
+async function loadManageResidents(){
+  const area=document.getElementById('mgrResidentsArea');
+  const stats=document.getElementById('mgrResidentsStats');
+  area.innerHTML='<p style="color:var(--text-light)">Loading residents...</p>';
+  _allManagedResidents=[];
+
+  // 1. Load from Supabase profiles (resident role) — these have auth accounts
+  try{
+    const sbProfiles=await SunData.getProfiles('resident');
+    sbProfiles.forEach(p=>{
+      _allManagedResidents.push({id:p.id,name:p.display_name||'',flat:p.flat_no||'',tower:p.flat_no?(p.flat_no.match(/^(ST[A-D][12])/i)||[])[1]||'':'',email:p.email||'',mobile:p.mobile||'',type:'',status:p.status||'active',source:'auth'});
+    });
+  }catch(e){console.warn('loadManageResidents: Supabase error',e);}
+
+  // 2. Load from residents.json directory — these are the full MyGate dataset
+  try{
+    if(!window._residentData||!window._residentData.length){
+      const resp=await fetch('data/residents.json');
+      if(resp.ok) window._residentData=await resp.json();
+    }
+    if(window._residentData){
+      window._residentData.forEach((r,i)=>{
+        // Skip if already in auth list by matching email or name+flat
+        const exists=_allManagedResidents.find(a=>
+          (a.email&&r.mb&&a.email===r.mb)||(a.name.toLowerCase()===r.n.toLowerCase()&&a.flat===r.f)
+        );
+        if(!exists){
+          _allManagedResidents.push({id:'dir_'+i,name:r.n||'',flat:r.f||'',tower:r.t||'',flatNo:r.fn||'',email:'',mobile:r.mb||'',type:r.tp||'',occupancy:r.oc||'',status:r.st||'Active',source:'directory'});
+        }
+      });
+    }
+  }catch(e){console.warn('loadManageResidents: directory error',e);}
+
+  // Stats
+  const authCount=_allManagedResidents.filter(r=>r.source==='auth').length;
+  const dirCount=_allManagedResidents.filter(r=>r.source==='directory').length;
+  const activeCount=_allManagedResidents.filter(r=>r.status==='active'||r.status==='Active').length;
+  stats.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div class="dir-stat-card"><div class="stat-num">${_allManagedResidents.length}</div><div class="stat-label">Total</div></div>
+    <div class="dir-stat-card"><div class="stat-num" style="color:#2e7d32">${authCount}</div><div class="stat-label">With Login</div></div>
+    <div class="dir-stat-card"><div class="stat-num" style="color:#1565c0">${dirCount}</div><div class="stat-label">Directory Only</div></div>
+    <div class="dir-stat-card"><div class="stat-num" style="color:#00695c">${activeCount}</div><div class="stat-label">Active</div></div>
+  </div>`;
+
+  filterManagedResidents();
+}
+
+function filterManagedResidents(){
+  const area=document.getElementById('mgrResidentsArea');
+  const q=(document.getElementById('mgrSearchInput')?.value||'').toLowerCase();
+  const tw=document.getElementById('mgrTowerFilter')?.value||'';
+
+  let filtered=_allManagedResidents;
+  if(q){filtered=filtered.filter(r=>(r.name+' '+r.flat+' '+r.email+' '+r.tower+' '+r.mobile).toLowerCase().includes(q));}
+  if(tw){filtered=filtered.filter(r=>r.tower===tw);}
+
+  if(!filtered.length){area.innerHTML='<p style="color:var(--text-light);text-align:center;padding:15px">No residents match your search.</p>';return;}
+
+  // Show first 50 results (paginated)
+  const showing=filtered.slice(0,50);
+  let h=`<p style="font-size:0.82rem;color:#666;margin-bottom:8px">Showing <strong>${showing.length}</strong> of <strong>${filtered.length}</strong> residents</p>`;
+  h+='<div class="dir-table-wrap"><table class="dir-table"><thead><tr><th>Name</th><th>Flat</th><th>Tower</th><th>Mobile</th><th>Type</th><th>Status</th><th>Source</th><th>Action</th></tr></thead><tbody>';
+  showing.forEach(r=>{
+    const srcBadge=r.source==='auth'?'<span class="dir-badge dir-badge-active">Auth</span>':'<span class="dir-badge" style="background:#e3f2fd;color:#1565c0">Directory</span>';
+    const statusBadge=(r.status==='active'||r.status==='Active')?'<span class="dir-badge dir-badge-active">Active</span>':'<span class="dir-badge dir-badge-inactive">Inactive</span>';
+    const typeBadge=r.type?`<span class="dir-badge ${r.type.includes('Owner')?'dir-badge-owner':r.type.includes('Tenant')?'dir-badge-tenant':'dir-badge-family'}">${r.type}</span>`:'—';
+    h+=`<tr>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.flat}</td>
+      <td>${r.tower?'<span class="dir-tower-tag">'+r.tower+'</span>':''}</td>
+      <td style="font-size:0.8rem">${r.mobile||'—'}</td>
+      <td>${typeBadge}</td>
+      <td>${statusBadge}</td>
+      <td>${srcBadge}</td>
+      <td><button class="btn btn-sm" style="background:#1565c0;color:#fff;font-size:0.72rem" onclick="editManagedResident('${r.id}')">Edit</button></td>
+    </tr>`;
+  });
+  h+='</tbody></table></div>';
+  if(filtered.length>50) h+=`<p style="text-align:center;margin-top:10px;color:#666;font-size:0.82rem">Refine your search to see more results (${filtered.length-50} hidden)</p>`;
+  area.innerHTML=h;
+}
+
+function showAddResidentForm(){
+  const area=document.getElementById('addResidentFormArea');
+  if(area.style.display!=='none'){area.style.display='none';return;}
+  area.style.display='block';
+  area.innerHTML=`<div class="mgr-form-card">
+    <h4 style="color:#1565c0;margin-bottom:12px">&#10133; Add New Resident</h4>
+    <div class="grid-2">
+      <div class="form-group"><label>Full Name *</label><input type="text" class="form-control" id="addResName" placeholder="e.g. Sh. Rajesh Kumar"></div>
+      <div class="form-group"><label>Flat Number *</label><input type="text" class="form-control" id="addResFlat" placeholder="e.g. STC-504, STD-701"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Tower *</label><select class="form-control" id="addResTower">
+        <option value="">Select Tower</option>
+        <option>STA1</option><option>STA2</option><option>STB1</option><option>STB2</option>
+        <option>STC1</option><option>STC2</option><option>STD1</option><option>STD2</option>
+      </select></div>
+      <div class="form-group"><label>Mobile</label><input type="tel" class="form-control" id="addResMobile" placeholder="e.g. 9876543210"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Email</label><input type="email" class="form-control" id="addResEmail" placeholder="resident@email.com"></div>
+      <div class="form-group"><label>Resident Type</label><select class="form-control" id="addResType">
+        <option value="Owner">Owner</option><option value="Tenant">Tenant</option>
+        <option value="Owner Family">Owner Family</option><option value="Tenant Family">Tenant Family</option>
+      </select></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Occupancy</label><select class="form-control" id="addResOccupancy">
+        <option value="Residing">Residing</option>
+        <option value="Let out to one tenant">Let out to one tenant</option>
+        <option value="Let out to multiple tenants">Let out to multiple tenants</option>
+        <option value="Vacant">Vacant</option>
+      </select></div>
+      <div class="form-group"><label>Status</label><select class="form-control" id="addResStatus">
+        <option value="Active">Active</option><option value="Inactive">Inactive</option>
+      </select></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn btn-success" onclick="saveNewResident()">Save Resident</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('addResidentFormArea').style.display='none'">Cancel</button>
+    </div>
+    <div class="auth-error" id="addResErr" style="margin-top:10px"></div>
+    <div class="auth-success" id="addResSuc" style="margin-top:10px"></div>
+  </div>`;
+}
+
+async function saveNewResident(){
+  const name=document.getElementById('addResName').value.trim();
+  const flat=document.getElementById('addResFlat').value.trim().toUpperCase();
+  const tower=document.getElementById('addResTower').value;
+  const mobile=document.getElementById('addResMobile').value.trim();
+  const email=document.getElementById('addResEmail').value.trim().toLowerCase();
+  const type=document.getElementById('addResType').value;
+  const occupancy=document.getElementById('addResOccupancy').value;
+  const status=document.getElementById('addResStatus').value;
+  const err=document.getElementById('addResErr');
+  const suc=document.getElementById('addResSuc');
+  err.style.display='none';suc.style.display='none';
+
+  if(!name||!flat){err.textContent='Name and Flat Number are required.';err.style.display='block';return;}
+  if(!tower){err.textContent='Please select a tower.';err.style.display='block';return;}
+
+  // Add to residents.json data (in-memory) and also to localStorage backup
+  const newEntry={n:name,f:tower+' '+flat.replace(tower+'-','').replace(tower,''),t:tower,fn:flat.replace(tower+'-','').replace(tower,'').trim(),tp:type,oc:occupancy,st:status,mb:mobile};
+
+  // Update in-memory directory
+  if(!window._residentData) window._residentData=[];
+  window._residentData.push(newEntry);
+
+  // Save to localStorage as backup
+  const dirBackup=JSON.parse(localStorage.getItem('st_resident_directory')||'[]');
+  dirBackup.push(newEntry);
+  localStorage.setItem('st_resident_directory',JSON.stringify(dirBackup));
+
+  // If email provided, also add to Supabase profiles
+  if(email){
+    try{
+      const session=await supa.auth.getSession();
+      const token=session.data.session?.access_token;
+      // Try Edge Function to create auth user
+      const resp=await fetch(SUPABASE_URL+'/functions/v1/approve-resident',{
+        method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({request_id:'MANUAL_'+Date.now(),permissions:{read:true,write:false},manual_create:{email:email,owner_name:name,flat_no:flat,mobile:mobile}})
+      }).catch(()=>null);
+      if(resp&&resp.ok){
+        const result=await resp.json();
+        suc.innerHTML='Resident <strong>'+name+'</strong> added with auth account!<br>Login: '+email+' / '+result.temp_password;
+      }else{
+        suc.innerHTML='Resident <strong>'+name+'</strong> added to directory.<br><span style="color:#e65100;font-size:0.82rem">Note: Auth account not created (Edge Function not deployed). Use the Python script to create login access.</span>';
+      }
+    }catch(e){
+      suc.innerHTML='Resident <strong>'+name+'</strong> added to directory.';
+    }
+  }else{
+    suc.innerHTML='Resident <strong>'+name+'</strong> added to directory successfully.';
+  }
+  suc.style.display='block';
+
+  // Clear form
+  document.getElementById('addResName').value='';
+  document.getElementById('addResFlat').value='';
+  document.getElementById('addResMobile').value='';
+  document.getElementById('addResEmail').value='';
+
+  // Refresh list
+  loadManageResidents();
+}
+
+function editManagedResident(id){
+  const r=_allManagedResidents.find(x=>x.id===id);
+  if(!r)return;
+  const area=document.getElementById('editResidentFormArea');
+  area.style.display='block';
+  area.scrollIntoView({behavior:'smooth',block:'start'});
+  area.innerHTML=`<div class="mgr-form-card" style="border-color:#e65100">
+    <h4 style="color:#e65100;margin-bottom:12px">&#9998; Edit Resident: ${r.name}</h4>
+    <div class="grid-2">
+      <div class="form-group"><label>Full Name *</label><input type="text" class="form-control" id="editResName" value="${r.name||''}"></div>
+      <div class="form-group"><label>Flat *</label><input type="text" class="form-control" id="editResFlat" value="${r.flat||r.flatNo||''}"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Tower</label><select class="form-control" id="editResTower">
+        <option value="">Select</option>
+        ${['STA1','STA2','STB1','STB2','STC1','STC2','STD1','STD2'].map(t=>'<option'+(t===r.tower?' selected':'')+'>'+t+'</option>').join('')}
+      </select></div>
+      <div class="form-group"><label>Mobile</label><input type="tel" class="form-control" id="editResMobile" value="${r.mobile||''}"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Email</label><input type="email" class="form-control" id="editResEmail" value="${r.email||''}" ${r.source==='auth'?'readonly style="background:#f5f5f5"':''}></div>
+      <div class="form-group"><label>Type</label><select class="form-control" id="editResType">
+        ${['Owner','Tenant','Owner Family','Tenant Family','Co-Owner','Multi Tenant'].map(t=>'<option'+(t===r.type?' selected':'')+'>'+t+'</option>').join('')}
+      </select></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Occupancy</label><select class="form-control" id="editResOcc">
+        ${['Residing','Let out to one tenant','Let out to multiple tenants','Vacant'].map(o=>'<option'+(o===(r.occupancy||'Residing')?' selected':'')+'>'+o+'</option>').join('')}
+      </select></div>
+      <div class="form-group"><label>Status</label><select class="form-control" id="editResStatus">
+        <option ${(r.status==='active'||r.status==='Active')?'selected':''}>Active</option>
+        <option ${(r.status==='inactive'||r.status==='Inactive')?'selected':''}>Inactive</option>
+      </select></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn btn-success" onclick="saveManagedResident('${id}','${r.source}')">Save Changes</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('editResidentFormArea').style.display='none'">Cancel</button>
+    </div>
+    <div class="auth-error" id="editResErr" style="margin-top:10px"></div>
+    <div class="auth-success" id="editResSuc" style="margin-top:10px"></div>
+  </div>`;
+}
+
+async function saveManagedResident(id,source){
+  const name=document.getElementById('editResName').value.trim();
+  const flat=document.getElementById('editResFlat').value.trim();
+  const tower=document.getElementById('editResTower').value;
+  const mobile=document.getElementById('editResMobile').value.trim();
+  const email=document.getElementById('editResEmail').value.trim();
+  const type=document.getElementById('editResType').value;
+  const occupancy=document.getElementById('editResOcc').value;
+  const status=document.getElementById('editResStatus').value;
+  const err=document.getElementById('editResErr');
+  const suc=document.getElementById('editResSuc');
+  err.style.display='none';suc.style.display='none';
+
+  if(!name||!flat){err.textContent='Name and Flat are required.';err.style.display='block';return;}
+
+  if(source==='auth'){
+    // Update Supabase profile
+    try{
+      const result=await SunData.updateProfileAdmin(id,{display_name:name,flat_no:flat,mobile:mobile,status:status.toLowerCase()});
+      if(result.error){err.textContent='Error: '+result.error.message;err.style.display='block';return;}
+      suc.textContent='Profile updated in Supabase successfully!';suc.style.display='block';
+    }catch(e){err.textContent='Error: '+e.message;err.style.display='block';return;}
+  }else{
+    // Update in-memory directory data
+    const dirIdx=parseInt(id.replace('dir_',''));
+    if(window._residentData&&window._residentData[dirIdx]){
+      window._residentData[dirIdx]={n:name,f:tower+' '+(flat.replace(tower+'-','').replace(tower,'').trim()||flat),t:tower,fn:flat.replace(tower+'-','').replace(tower,'').trim()||flat,tp:type,oc:occupancy,st:status,mb:mobile};
+    }
+    // Also save edits to localStorage
+    const edits=JSON.parse(localStorage.getItem('st_resident_edits')||'{}');
+    edits[id]={n:name,f:tower+' '+(flat.replace(tower+'-','').replace(tower,'').trim()||flat),t:tower,fn:flat.replace(tower+'-','').replace(tower,'').trim()||flat,tp:type,oc:occupancy,st:status,mb:mobile};
+    localStorage.setItem('st_resident_edits',JSON.stringify(edits));
+    suc.textContent='Resident updated in directory!';suc.style.display='block';
+  }
+
+  // Refresh list after short delay
+  setTimeout(()=>{document.getElementById('editResidentFormArea').style.display='none';loadManageResidents();},1000);
+}
 
 // ===== PROJECT TRACKER =====
 const COMM_NAMES={A:'Security',B:'Housekeeping',C:'Fire Safety',D:'Facilities',E:'Revenue',F:'Infrastructure',G:'Legal'};
