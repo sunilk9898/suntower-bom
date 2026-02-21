@@ -8,14 +8,14 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260222a">
+<link rel="stylesheet" href="css/style.css?v=20260222b">
 <!-- Firebase disabled — auth via Supabase Auth (JWT + RLS) -->
 <!-- <script src="js/firebase-config.js"></script> -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js?v=20260222a"></script>
-<script src="js/audit.js?v=20260222a"></script>
-<script src="js/auth.js?v=20260222a"></script>
-<script src="js/data.js?v=20260222a"></script>
+<script src="js/supabase-config.js?v=20260222b"></script>
+<script src="js/audit.js?v=20260222b"></script>
+<script src="js/auth.js?v=20260222b"></script>
+<script src="js/data.js?v=20260222b"></script>
 </head>
 <body>
 
@@ -568,11 +568,11 @@ function updateUI(){const u=document.getElementById('headerUser'),b=document.get
 function loadMemDB(){if(db){db.collection('members').orderBy('rank').get().then(s=>{if(!s.empty){members=s.docs.map(d=>d.data());updatePosBadges()}else loadMemLS()}).catch(()=>loadMemLS())}else loadMemLS()}
 function loadMemLS(){try{const s=localStorage.getItem('suntower_members');if(s){members=JSON.parse(s);updatePosBadges()}}catch(e){}}
 function buildElectionTable(){const t=document.getElementById('electionTable');if(!t)return;
-  const POS_ORDER=['President','Vice President','Gen Secretary','Vice Gen Secretary','Treasurer','Vice Treasurer','Joint Secretary','Sport Secretary','Culture Secretary','Spokesperson','Chairman','Co-Chairman','PRO','Advisor','Member'];
+  const POS_ORDER=['President','Vice President','Gen Secretary','Vice Gen Secretary','Treasurer','Vice Treasurer','Joint Treasurer','Joint Secretary','Sport Secretary','Culture Secretary','Spokesperson','Chairman','Co-Chairman','PRO','Advisor','Member','Executive Member'];
   // Merge EM + members and sort by position hierarchy
   const merged=EM.map((m,i)=>{const mem=members[i];return{name:m.name,flat:m.flat,v:m.v,pos:mem&&mem.position?mem.position:'To be elected'}});
   merged.sort((a,b)=>{const ai=POS_ORDER.indexOf(a.pos);const bi=POS_ORDER.indexOf(b.pos);const pa=ai>=0?ai:(a.pos==='To be elected'?999:POS_ORDER.length);const pb=bi>=0?bi:(b.pos==='To be elected'?999:POS_ORDER.length);if(pa!==pb)return pa-pb;return b.v-a.v});
-  const pc={'President':'badge-president','Vice President':'badge-vp','Gen Secretary':'badge-gs','Vice Gen Secretary':'badge-vgs','Treasurer':'badge-treasurer','Vice Treasurer':'badge-vt','Joint Secretary':'badge-vgs','Sport Secretary':'badge-info','Culture Secretary':'badge-info','Spokesperson':'badge-warning','Chairman':'badge-president','Co-Chairman':'badge-vp','PRO':'badge-info','Advisor':'badge-vt','Member':'badge-member'};
+  const pc={'President':'badge-president','Vice President':'badge-vp','Gen Secretary':'badge-gs','Vice Gen Secretary':'badge-vgs','Treasurer':'badge-treasurer','Vice Treasurer':'badge-vt','Joint Treasurer':'badge-vt','Joint Secretary':'badge-vgs','Sport Secretary':'badge-info','Culture Secretary':'badge-info','Spokesperson':'badge-warning','Chairman':'badge-president','Co-Chairman':'badge-vp','PRO':'badge-info','Advisor':'badge-vt','Member':'badge-member','Executive Member':'badge-member'};
   let h='<tr><th>#</th><th>Name</th><th>Flat</th><th>Votes</th><th>Position</th></tr>';
   merged.forEach((m,i)=>{const cls=pc[m.pos]||'badge-success';h+=`<tr style="background:#e8f5e9"><td>${i+1}</td><td><strong>${m.name}</strong></td><td>${m.flat}</td><td><strong>${m.v}</strong></td><td><span class="badge ${cls}">${m.pos}</span></td></tr>`});
   t.innerHTML=h}
