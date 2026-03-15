@@ -1244,7 +1244,11 @@ function buildCommittees(){const a=document.getElementById('committeesArea');if(
 
 // ===== RESIDENT DIRECTORY & AUTOCOMPLETE =====
 let _residentData=[];let _residentDataLoaded=false;
-function loadResidentData(){if(_residentDataLoaded)return Promise.resolve(_residentData);return fetch('data/residents.json').then(r=>r.json()).then(d=>{_residentData=d;_residentDataLoaded=true;console.log('Resident data loaded:',d.length,'records');return d}).catch(e=>{console.warn('Failed to load resident data:',e);return[]})}
+function loadResidentData(){if(_residentDataLoaded)return Promise.resolve(_residentData);return fetch('data/residents.json').then(r=>{if(!r.ok)throw new Error('No JSON');return r.json()}).then(d=>{_residentData=d;_residentDataLoaded=true;console.log('Resident data loaded from JSON:',d.length,'records');return d}).catch(()=>{if(typeof supa==='undefined'||!supa){console.warn('Supabase not available');return[]}
+console.log('residents.json not found, trying Supabase residents_directory...');
+return supa.from('residents_directory').select('*').then(({data,error})=>{if(!error&&data&&data.length>0){const mapped=data.map(r=>({n:r.name||'',f:r.flat_full||'',t:r.tower||'',fn:r.flat_no||'',tp:r.resident_type||'Owner',st:r.status||'Active',oc:r.occupancy||'Self-occupied',mb:r.mobile||''}));_residentData=mapped;_residentDataLoaded=true;console.log('Resident data loaded from residents_directory:',mapped.length,'records');return mapped}
+console.log('residents_directory empty/error, trying profiles...');
+return supa.from('profiles').select('*').then(({data:pData,error:pErr})=>{if(pErr){console.error('Supabase profiles error:',pErr);return[]}const mapped=(pData||[]).map(p=>{const flat=p.flat_no||'';const towerMatch=flat.match(/^(ST[A-D][12]?)/i);const tower=towerMatch?towerMatch[1].toUpperCase():'';const fn=flat.replace(/^ST[A-D][12]?-?/i,'');return{n:p.display_name||p.email||'',f:flat,t:tower,fn:fn,tp:p.type||'Owner',st:(p.status||'active')==='active'?'Active':'Inactive',oc:p.occupancy||'Self-occupied',mb:p.mobile||''}});_residentData=mapped;_residentDataLoaded=true;console.log('Resident data loaded from profiles:',mapped.length,'records');return mapped})})})}
 
 // Autocomplete for resident inputs in committees
 // Data format: {n:name, f:flat, t:tower, fn:flat_no, tp:type, oc:occupancy, st:status, mb:mobile}
