@@ -399,6 +399,56 @@ select.form-control { appearance: auto; }
 }
 .comm-remove-btn:hover { color: var(--danger); }
 
+/* Add Committee card */
+.comm-add-card {
+  display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--border); cursor: pointer; min-height: 200px;
+  transition: 0.2s;
+}
+.comm-add-card:hover { border-color: var(--primary); background: #f5f7ff; }
+.comm-add-card-inner { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-light); font-weight: 600; }
+.comm-add-card-icon { font-size: 2.5rem; line-height: 1; color: var(--primary); }
+
+/* Edit committee button */
+.comm-edit-btn {
+  background: none; border: none; color: var(--text-light); font-size: 1rem;
+  cursor: pointer; padding: 2px 8px; margin-left: auto; transition: 0.2s; opacity: 0.5;
+}
+.comm-edit-btn:hover { color: var(--primary); opacity: 1; }
+.committee-card h3 { display: flex; align-items: center; }
+
+/* Committee edit/add modal */
+.comm-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+.comm-modal {
+  background: #fff; border-radius: 8px; width: 420px; max-width: 95vw;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+}
+.comm-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.comm-modal-header h3 { margin: 0; font-size: 1rem; }
+.comm-modal-body { padding: 16px 20px; }
+.comm-modal-body label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-light); margin: 10px 0 4px; }
+.comm-modal-body label:first-child { margin-top: 0; }
+.comm-modal-body .form-control { width: 100%; padding: 8px 10px; }
+.comm-modal-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px; border-top: 1px solid var(--border);
+}
+
+/* Color swatches */
+.comm-color-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.comm-color-swatch {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: 0.15s;
+}
+.comm-color-swatch:hover { transform: scale(1.15); }
+.comm-color-swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--text); }
+
 /* ========== FORMULA / LEGAL ========== */
 .formula-box { background: #f7f8fc; padding: 20px; border-radius: var(--tile-radius); border: 1px solid var(--border); margin: 15px 0; }
 .formula-box h4 { color: var(--primary); margin-bottom: 8px; }

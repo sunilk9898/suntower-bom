@@ -231,7 +231,7 @@ function saveCommitteeMembers(data) { localStorage.setItem('st_committee_members
 
 // Migrate old format {convenor,bomMember,residents[3]} → new {bomMembers[{role,name}],residents[]}
 function migrateCommData(sv) {
-  if (sv.bomMembers) return sv; // already new format
+  if (sv.bomMembers) return sv;
   const bm = [];
   if (sv.convenor) bm.push({role:'Convenor',name:sv.convenor});
   if (sv.bomMember) bm.push({role:'Member',name:sv.bomMember});
@@ -240,9 +240,33 @@ function migrateCommData(sv) {
   return { bomMembers: bm, residents: res };
 }
 
+// --- Committee Definitions (dynamic, stored in localStorage + Supabase) ---
+const DEFAULT_COMM_DEFS = [
+  {c:'A',n:'Security',icon:'&#128737;',bg:'#b71c1c',sop:'CCTV, patrolling, Park Plus, welfare checks'},
+  {c:'B',n:'Housekeeping',icon:'&#128700;',bg:'#4a148c',sop:'Cleaning, lifts, plants, shaft maintenance'},
+  {c:'C',n:'Fire Safety',icon:'&#128293;',bg:'#1a237e',sop:'FAD panels, sprinklers, smoke detectors, AMC'},
+  {c:'D',n:'Facilities',icon:'&#127968;',bg:'#01579b',sop:'Library, medical, play areas, club house'},
+  {c:'E',n:'Revenue',icon:'&#128176;',bg:'#004d40',sop:'Dues, parking, advertising, ERP, rentals'},
+  {c:'F',n:'Infrastructure',icon:'&#128679;',bg:'#e65100',sop:'All 18 projects, tenders, renovations'},
+  {c:'G',n:'Legal',icon:'&#9878;',bg:'#37474f',sop:'RWA compliance, UP Apartment Act, legal notices, dispute resolution, contracts'}
+];
+const COMM_COLORS = ['#b71c1c','#4a148c','#1a237e','#01579b','#004d40','#e65100','#37474f','#795548','#880e4f','#1b5e20','#ff6f00','#263238'];
+let commDefs = [];
+function loadCommitteeDefs() {
+  try { const s = localStorage.getItem('st_committee_defs'); if (s) { commDefs = JSON.parse(s); return; } } catch(e) {}
+  commDefs = JSON.parse(JSON.stringify(DEFAULT_COMM_DEFS));
+}
+function saveCommitteeDefs() { localStorage.setItem('st_committee_defs', JSON.stringify(commDefs)); supaSync('st_committee_defs'); }
+function getNextCommLetter() {
+  const used = commDefs.map(d => d.c);
+  for (let i = 0; i < 26; i++) { const ch = String.fromCharCode(65 + i); if (!used.includes(ch)) return ch; }
+  return (commDefs.length + 1).toString();
+}
+
 function saveCommitteesUI() {
   const cm = {};
-  ['A','B','C','D','E','F','G'].forEach(c => {
+  commDefs.forEach(def => {
+    const c = def.c;
     const bomWrap = document.getElementById('cm_' + c + '_bom_wrap');
     const resWrap = document.getElementById('cm_' + c + '_res_wrap');
     const bomMembers = [];
@@ -264,40 +288,46 @@ function saveCommitteesUI() {
   saveCommitteeMembers(cm); showToast('Committee assignments saved!', 'success');
 }
 
-const COMM_DEFS = [{c:'A',n:'Security',icon:'&#128737;',bg:'#b71c1c',sop:'CCTV, patrolling, Park Plus, welfare checks'},{c:'B',n:'Housekeeping',icon:'&#128700;',bg:'#4a148c',sop:'Cleaning, lifts, plants, shaft maintenance'},{c:'C',n:'Fire Safety',icon:'&#128293;',bg:'#1a237e',sop:'FAD panels, sprinklers, smoke detectors, AMC'},{c:'D',n:'Facilities',icon:'&#127968;',bg:'#01579b',sop:'Library, medical, play areas, club house'},{c:'E',n:'Revenue',icon:'&#128176;',bg:'#004d40',sop:'Dues, parking, advertising, ERP, rentals'},{c:'F',n:'Infrastructure',icon:'&#128679;',bg:'#e65100',sop:'All 18 projects, tenders, renovations'},{c:'G',n:'Legal',icon:'&#9878;',bg:'#37474f',sop:'RWA compliance, UP Apartment Act, legal notices, dispute resolution, contracts'}];
-
 function buildCommittees() {
   const a = document.getElementById('committeesArea'); if (!a) return; a.innerHTML = '';
+  loadCommitteeDefs();
   const saved = loadCommitteeMembers();
   const dis = isAdmin ? '' : 'disabled';
   const vm = members.filter(m => m && m.name);
+  // Update title with dynamic count
+  const titleEl = document.getElementById('commTitle');
+  if (titleEl) titleEl.textContent = commDefs.length + ' Working Committees';
   let h = '<div class="grid-2">';
-  COMM_DEFS.forEach(cm => {
+  commDefs.forEach(cm => {
     const raw = saved[cm.c] || {bomMembers:[{role:'Convenor',name:''},{role:'Member',name:''}],residents:['','','']};
     const sv = migrateCommData(raw);
-    h += `<div class="committee-card"><h3><div class="committee-icon" style="background:${cm.bg}">${cm.icon}</div>Committee ${cm.c} - ${cm.n}</h3>`;
+    h += `<div class="committee-card" id="comm_card_${cm.c}">`;
+    h += `<h3><div class="committee-icon" style="background:${cm.bg}">${cm.icon}</div>Committee ${cm.c} - ${cm.n}`;
+    if (isAdmin) h += `<button class="comm-edit-btn" onclick="openEditCommittee('${cm.c}')" title="Edit committee">&#9998;</button>`;
+    h += `</h3>`;
     // BOM Members
     h += `<div id="cm_${cm.c}_bom_wrap">`;
-    sv.bomMembers.forEach((bm, i) => {
-      h += renderBomSlot(cm.c, i, bm, vm, dis);
-    });
+    sv.bomMembers.forEach((bm, i) => { h += renderBomSlot(cm.c, i, bm, vm, dis); });
     h += `</div>`;
     if (isAdmin) h += `<button class="comm-add-btn" onclick="addCommBomMember('${cm.c}')">+ Add BOM Member</button>`;
     // Residents
     h += `<div id="cm_${cm.c}_res_wrap">`;
-    sv.residents.forEach((r, i) => {
-      h += renderResSlot(cm.c, i, r, dis);
-    });
+    sv.residents.forEach((r, i) => { h += renderResSlot(cm.c, i, r, dis); });
     h += `</div>`;
     if (isAdmin) h += `<button class="comm-add-btn" onclick="addCommResident('${cm.c}')">+ Add Resident</button>`;
     h += `<div class="sop-box"><strong>SOP:</strong> ${cm.sop}</div></div>`;
   });
+  // Add Committee card (admin only)
+  if (isAdmin) {
+    h += `<div class="committee-card comm-add-card" onclick="openAddCommittee()">
+      <div class="comm-add-card-inner"><span class="comm-add-card-icon">+</span><span>Add Committee</span></div>
+    </div>`;
+  }
   h += '</div>'; a.innerHTML = h;
   const ca = document.getElementById('commActions'); if (ca) ca.style.display = isAdmin ? 'flex' : 'none';
 }
 
 function renderBomSlot(letter, idx, bm, vm, dis) {
-  const role = idx === 0 ? 'Convenor' : 'Member';
   const label = idx === 0 ? 'BOM Convenor' : 'BOM Member';
   const rmBtn = (isAdmin && idx > 0) ? `<button class="comm-remove-btn" onclick="this.closest('.comm-member-slot').remove()" title="Remove">&times;</button>` : '';
   if (!vm) vm = members.filter(m => m && m.name);
@@ -311,8 +341,7 @@ function renderResSlot(letter, idx, value, dis) {
 }
 
 function addCommBomMember(letter) {
-  const wrap = document.getElementById('cm_' + letter + '_bom_wrap');
-  if (!wrap) return;
+  const wrap = document.getElementById('cm_' + letter + '_bom_wrap'); if (!wrap) return;
   const idx = wrap.querySelectorAll('.comm-member-slot').length;
   const vm = members.filter(m => m && m.name);
   const tmp = document.createElement('div');
@@ -321,14 +350,104 @@ function addCommBomMember(letter) {
 }
 
 function addCommResident(letter) {
-  const wrap = document.getElementById('cm_' + letter + '_res_wrap');
-  if (!wrap) return;
+  const wrap = document.getElementById('cm_' + letter + '_res_wrap'); if (!wrap) return;
   const idx = wrap.querySelectorAll('.comm-member-slot').length;
   const tmp = document.createElement('div');
   tmp.innerHTML = renderResSlot(letter, idx, '', '');
   wrap.appendChild(tmp.firstElementChild);
-  // Update resident labels
   wrap.querySelectorAll('.comm-member-slot .slot-type').forEach((el, i) => { el.textContent = 'Resident ' + (i+1); });
+}
+
+// --- Add / Edit Committee Modal ---
+function openAddCommittee() {
+  const letter = getNextCommLetter();
+  showCommModal('Add New Committee', letter, '', '', COMM_COLORS[commDefs.length % COMM_COLORS.length], function(data) {
+    commDefs.push({c: data.c, n: data.n, icon: data.icon, bg: data.bg, sop: data.sop});
+    saveCommitteeDefs();
+    buildCommittees();
+    showToast('Committee ' + data.c + ' added!', 'success');
+  });
+}
+
+function openEditCommittee(letter) {
+  const def = commDefs.find(d => d.c === letter); if (!def) return;
+  showCommModal('Edit Committee ' + letter, letter, def.n, def.sop, def.bg, function(data) {
+    def.n = data.n; def.sop = data.sop; def.bg = data.bg; def.icon = data.icon;
+    saveCommitteeDefs();
+    buildCommittees();
+    showToast('Committee ' + letter + ' updated!', 'success');
+  }, letter);
+}
+
+function deleteCommittee(letter) {
+  if (!confirm('Delete Committee ' + letter + '? This will also remove all member assignments for this committee.')) return;
+  commDefs = commDefs.filter(d => d.c !== letter);
+  saveCommitteeDefs();
+  // Remove member data
+  const cm = loadCommitteeMembers(); delete cm[letter]; saveCommitteeMembers(cm);
+  buildCommittees();
+  closeCommModal();
+  showToast('Committee ' + letter + ' deleted', 'success');
+}
+
+function showCommModal(title, letter, name, sop, color, onSave, editLetter) {
+  let existing = document.getElementById('commEditModal');
+  if (existing) existing.remove();
+  const isEdit = !!editLetter;
+  const modal = document.createElement('div');
+  modal.id = 'commEditModal'; modal.className = 'comm-modal-overlay';
+  modal.innerHTML = `
+    <div class="comm-modal">
+      <div class="comm-modal-header"><h3>${title}</h3><button class="comm-remove-btn" onclick="closeCommModal()" style="font-size:20px">&times;</button></div>
+      <div class="comm-modal-body">
+        <label>Committee ID</label>
+        <input class="form-control" id="cmf_letter" value="${letter}" ${isEdit ? 'disabled' : ''} maxlength="2" style="width:60px;text-transform:uppercase">
+        <label>Name <span style="color:#e53935">*</span></label>
+        <input class="form-control" id="cmf_name" value="${name}" placeholder="e.g. Security, Finance...">
+        <label>SOP / Scope</label>
+        <input class="form-control" id="cmf_sop" value="${sop}" placeholder="Describe responsibilities...">
+        <label>Color</label>
+        <div class="comm-color-swatches" id="cmf_colors"></div>
+      </div>
+      <div class="comm-modal-footer">
+        ${isEdit ? `<button class="btn" style="background:#e53935;color:#fff;margin-right:auto" onclick="deleteCommittee('${editLetter}')">Delete</button>` : ''}
+        <button class="btn btn-secondary" onclick="closeCommModal()">Cancel</button>
+        <button class="btn btn-primary" id="cmf_save">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Color swatches
+  const swatchWrap = document.getElementById('cmf_colors');
+  let selectedColor = color;
+  COMM_COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'comm-color-swatch' + (c === color ? ' active' : '');
+    sw.style.background = c;
+    sw.onclick = function() {
+      swatchWrap.querySelectorAll('.comm-color-swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active'); selectedColor = c;
+    };
+    swatchWrap.appendChild(sw);
+  });
+  // Save handler
+  document.getElementById('cmf_save').onclick = function() {
+    const n = document.getElementById('cmf_name').value.trim();
+    if (!n) { showToast('Committee name is required', 'error'); return; }
+    const cId = document.getElementById('cmf_letter').value.trim().toUpperCase();
+    if (!cId) { showToast('Committee ID is required', 'error'); return; }
+    if (!isEdit && commDefs.find(d => d.c === cId)) { showToast('Committee ' + cId + ' already exists', 'error'); return; }
+    const sopVal = document.getElementById('cmf_sop').value.trim();
+    // Pick a default icon based on first letter or generic
+    const icon = '&#128203;';
+    onSave({c: cId, n: n, sop: sopVal, bg: selectedColor, icon: isEdit ? (commDefs.find(d=>d.c===cId)||{}).icon || icon : icon});
+    closeCommModal();
+  };
+  // Close on backdrop click
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeCommModal(); });
+}
+
+function closeCommModal() {
+  const m = document.getElementById('commEditModal'); if (m) m.remove();
 }
 
 // ===== RESIDENT DIRECTORY & AUTOCOMPLETE =====
