@@ -1,17 +1,17 @@
 // ============================================
 // SUN TOWER RWA — BOM Dashboard Service Worker
 // ============================================
-const CACHE_NAME = 'suntower-bom-v5';
+const CACHE_NAME = 'suntower-bom-v7';
 const SHELL_FILES = [
-  '/bom/',
-  '/bom/index.html',
-  '/bom/css/bom.css',
-  '/bom/js/supabase-config.js',
-  '/bom/js/auth.js',
-  '/bom/js/audit.js',
-  '/bom/js/data.js',
-  '/bom/js/bom-sidebar.js',
-  '/bom/js/bom-app.js',
+  '/',
+  '/index.html',
+  '/css/bom.css',
+  '/js/supabase-config.js',
+  '/js/auth.js',
+  '/js/audit.js',
+  '/js/data.js',
+  '/js/bom-sidebar.js',
+  '/js/bom-app.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
   'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js'
 ];
@@ -45,7 +45,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           return response;
         })
-        .catch(() => caches.match(event.request).then(cached => cached || caches.match('/bom/index.html')))
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match('/index.html')))
     );
     return;
   }

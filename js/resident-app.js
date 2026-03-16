@@ -61,7 +61,7 @@ SunAuth.init(function(state) {
 
     // BOM/admin users → redirect to /bom/
     if (state.role === 'admin' || state.role === 'bom') {
-      window.location.href = '/bom/';
+      window.location.href = 'https://bom.suntower.in/';
       return;
     }
 
@@ -144,7 +144,7 @@ async function doResidentLogin() {
   if (!profile || profile.role === 'admin' || profile.role === 'bom') {
     currentUser = { email: result.data.user.email, id: result.data.user.id };
     suc.textContent = 'Redirecting to BOM Portal...'; suc.style.display = 'block';
-    setTimeout(function() { window.location.href = '/bom/'; }, 600);
+    setTimeout(function() { window.location.href = 'https://bom.suntower.in/'; }, 600);
     return;
   }
 

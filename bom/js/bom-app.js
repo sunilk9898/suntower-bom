@@ -70,11 +70,15 @@ const PERM_MAP = {
 function lockBOMUI() {
   document.getElementById('bomContent').style.display = 'none';
   document.getElementById('bomLocked').style.display = 'block';
+  var sb = document.getElementById('dashSidebar'); if (sb) sb.style.display = 'none';
+  var st = document.getElementById('sidebarToggle'); if (st) st.style.display = 'none';
 }
 
 function unlockBOM() {
   document.getElementById('bomLocked').style.display = 'none';
   document.getElementById('bomContent').style.display = 'block';
+  var sb = document.getElementById('dashSidebar'); if (sb) sb.style.display = '';
+  var st = document.getElementById('sidebarToggle'); if (st) st.style.display = '';
   loadMemDB(); buildElectionTable(); loadResidentData();
   showSection('kpi');
   // Init sidebar permissions
@@ -133,7 +137,7 @@ async function doLogin() {
   if (result.data.role === 'resident') {
     suc.textContent = 'Resident account — redirecting to Resident Portal...';
     suc.style.display = 'block';
-    setTimeout(() => { window.location.href = '/'; }, 1500);
+    setTimeout(() => { window.location.href = 'https://suntower.in'; }, 1500);
     return;
   }
   trackBOMLogin(); updateUI();
@@ -455,7 +459,7 @@ let _residentData = []; let _residentDataLoaded = false;
 
 function loadResidentData() {
   if (_residentDataLoaded) return Promise.resolve(_residentData);
-  return fetch('/bom/data/residents.json').then(r => { if (!r.ok) throw new Error('No JSON'); return r.json(); }).then(d => { _residentData = d; _residentDataLoaded = true; console.log('Resident data loaded from JSON:', d.length, 'records'); return d; }).catch(() => {
+  return fetch('/data/residents.json').then(r => { if (!r.ok) throw new Error('No JSON'); return r.json(); }).then(d => { _residentData = d; _residentDataLoaded = true; console.log('Resident data loaded from JSON:', d.length, 'records'); return d; }).catch(() => {
     // Try root path
     return fetch('/data/residents.json').then(r => { if (!r.ok) throw new Error('No JSON'); return r.json(); }).then(d => { _residentData = d; _residentDataLoaded = true; return d; }).catch(() => {
       if (typeof supa === 'undefined' || !supa) { console.warn('Supabase not available'); return []; }
@@ -617,8 +621,8 @@ function saveBOMAcctMeta(name, email, pass) {
 
 function showAcctSuccessCard(name, email, pass) {
   const area = document.getElementById('accSuccessCard'); const dispName = name || email;
-  const credText = `BOM Portal Login\nName: ${dispName}\nEmail: ${email}\nPassword: ${pass}\nURL: https://suntower.in/bom/`;
-  const wpText = encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${dispName},\n\nYour BOM account has been created:\n📧 Email: ${email}\n🔑 Password: ${pass}\n🔗 URL: https://suntower.in/bom/\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);
+  const credText = `BOM Portal Login\nName: ${dispName}\nEmail: ${email}\nPassword: ${pass}\nURL: https://bom.suntower.in/`;
+  const wpText = encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${dispName},\n\nYour BOM account has been created:\n📧 Email: ${email}\n🔑 Password: ${pass}\n🔗 URL: https://bom.suntower.in/\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);
   area.innerHTML = `<div class="acct-success-card"><h4>&#9989; Account Created Successfully</h4><dl class="acct-success-detail"><dt>Member</dt><dd><strong>${dispName}</strong></dd><dt>Email</dt><dd>${email}</dd><dt>Password</dt><dd><code style="background:#fff;padding:2px 8px;border-radius:4px;font-weight:700;color:#1a237e">${pass}</code></dd></dl><div class="acct-copy-bar"><button class="acct-copy-btn acct-copy-btn-cred" onclick="copyAcctCred('${credText.replace(/'/g, "\\'")}')">&#128203; Copy Credentials</button><button class="acct-copy-btn acct-copy-btn-wp" onclick="window.open('https://wa.me/?text=${wpText}','_blank')">&#128172; Share via WhatsApp</button><button class="acct-copy-btn acct-copy-btn-dismiss" onclick="this.closest('.acct-success-card').remove()">&#10005; Dismiss</button></div></div>`;
   document.getElementById('accEmail').value = ''; document.getElementById('accPass').value = ''; document.getElementById('accName').selectedIndex = 0;
 }
@@ -638,8 +642,8 @@ function buildAccountList() {
     const statusCls = a.lastLogin ? 'acct-status-active' : 'acct-status-never';
     const statusTxt = a.lastLogin ? 'Active' : 'Never Logged In';
     const pw = a.password || users[a.email] || '—';
-    const credText = `BOM Portal Login\\nName: ${(a.name || '').replace(/'/g, "\\'")}\\nEmail: ${a.email}\\nPassword: ${pw}\\nURL: https://suntower.in/bom/`;
-    const wpText = encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${a.name || a.email},\n\nYour BOM account:\n📧 Email: ${a.email}\n🔑 Password: ${pw}\n🔗 URL: https://suntower.in/bom/\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);
+    const credText = `BOM Portal Login\\nName: ${(a.name || '').replace(/'/g, "\\'")}\\nEmail: ${a.email}\\nPassword: ${pw}\\nURL: https://bom.suntower.in/`;
+    const wpText = encodeURIComponent(`🏢 Sun Tower BOM Portal\n\nDear ${a.name || a.email},\n\nYour BOM account:\n📧 Email: ${a.email}\n🔑 Password: ${pw}\n🔗 URL: https://bom.suntower.in/\n\nPlease login and change your password.\n\n— Sun Tower RWA Admin`);
     h += `<tr><td>${i+1}</td><td><strong>${a.name || '—'}</strong>${a.flat ? '<br><span style="font-size:0.72rem;color:#999">' + a.flat + '</span>' : ''}</td><td style="font-size:0.8rem">${a.email}</td><td><span class="acct-pw-reveal" title="Click to copy" onclick="navigator.clipboard.writeText('${pw}');this.textContent='Copied!';setTimeout(()=>{this.textContent='${pw}'},1500)">${pw}</span></td><td style="font-size:0.8rem">${dt}</td><td><span class="acct-status ${statusCls}"><span class="acct-status-dot"></span> ${statusTxt}</span></td><td><div class="acct-action-group"><button class="btn btn-sm" style="background:var(--primary);color:#fff" onclick="copyAcctCred('${credText}')" title="Copy">&#128203;</button><button class="btn btn-sm" style="background:#25d366;color:#fff" onclick="window.open('https://wa.me/?text=${wpText}','_blank')" title="WhatsApp">&#128172;</button><button class="btn btn-sm" style="background:#e65100;color:#fff" onclick="editBOMAccount('${a.id}')" title="Edit">&#9998;</button><button class="btn btn-sm btn-danger" onclick="deleteBOMAccount('${a.id}')" title="Delete">&#128465;</button></div></td></tr>`;
   });
   h += `</table>`; area.innerHTML = h;
@@ -1121,7 +1125,7 @@ function initRealtime() {
 // ===== SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/bom/sw.js').then(reg => { console.log('[BOM] SW registered:', reg.scope); }).catch(err => { console.log('[BOM] SW registration failed:', err); });
+    navigator.serviceWorker.register('/sw.js').then(reg => { console.log('[BOM] SW registered:', reg.scope); }).catch(err => { console.log('[BOM] SW registration failed:', err); });
   });
 }
 

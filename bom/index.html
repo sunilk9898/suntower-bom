@@ -31,7 +31,7 @@
       <div class="form-group"><label>Password</label><input type="password" class="form-control" id="loginPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter')doLogin()"></div>
       <button class="btn btn-primary btn-lg" style="width:100%" onclick="doLogin()">Login</button>
       <div class="auth-link" onclick="showForgotPw()">Forgot Password?</div>
-      <div class="auth-link" onclick="window.location.href='/'">Back to Resident Portal</div>
+      <div class="auth-link" onclick="window.location.href='https://suntower.in'">Back to Resident Portal</div>
     </div>
     <div id="forgotForm" style="display:none">
       <h2>Reset Password</h2>
@@ -50,7 +50,7 @@
 
   <!-- HEADER BAR -->
   <header class="dash-header">
-    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">&#9776;</button>
+    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar" style="display:none">&#9776;</button>
     <div class="logo-sm" onclick="window.location.href='/'"><svg viewBox="0 0 100 100" width="26" height="26" fill="none"><circle cx="50" cy="22" r="12" fill="#fff3e0"/><rect x="32" y="42" width="36" height="46" rx="3" fill="#fff" opacity="0.95"/><rect x="45" y="78" width="10" height="10" rx="2" fill="#ff6f00"/></svg></div>
     <div class="header-text">
       <div class="header-title">SUN TOWER RWA - BOM Dashboard</div>
@@ -66,7 +66,7 @@
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <!-- SIDEBAR -->
-  <nav class="dash-sidebar" id="dashSidebar">
+  <nav class="dash-sidebar" id="dashSidebar" style="display:none">
 
     <!-- KPI — standalone -->
     <div class="sidebar-section">
@@ -199,7 +199,7 @@
     <!-- Sidebar Footer -->
     <div class="sidebar-footer">
       <span class="sidebar-footer-text">
-        <a href="/">&#127968; Resident Portal</a>
+        <a href="https://suntower.in">&#127968; Resident Portal</a>
       </span>
     </div>
   </nav>
@@ -620,7 +620,7 @@
 
 <!-- JS -->
 <script src="js/bom-sidebar.js?v=20260315"></script>
-<script src="js/bom-app.js?v=20260316c"></script>
+<script src="js/bom-app.js?v=20260316e"></script>
 
 </body>
 </html>
