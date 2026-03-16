@@ -4,7 +4,7 @@
 // Provides offline shell caching and background sync
 // Version: 1.0.0
 
-const CACHE_NAME = 'suntower-v1';
+const CACHE_NAME = 'suntower-resident-v2';
 const SHELL_FILES = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const SHELL_FILES = [
   '/js/auth.js',
   '/js/audit.js',
   '/js/data.js',
+  '/js/resident-app.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
   'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js'
 ];

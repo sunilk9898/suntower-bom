@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sun Tower RWA - BOM Dashboard</title>
+<meta name="description" content="Sun Tower RWA Board of Management Dashboard">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="stylesheet" href="css/bom.css?v=20260316b">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="js/supabase-config.js?v=20260315"></script>
+<script src="js/audit.js?v=20260315"></script>
+<script src="js/auth.js?v=20260315"></script>
+<script src="js/data.js?v=20260316b"></script>
+</head>
+<body>
+
+<!-- AUTH LOGIN OVERLAY -->
+<div class="auth-overlay hidden" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo"><div style="display:inline-flex;width:60px;height:60px;background:linear-gradient(135deg,#ff6f00,#ff8f00);border-radius:14px;align-items:center;justify-content:center;"><svg viewBox="0 0 100 100" width="36" height="36" fill="none"><circle cx="50" cy="22" r="12" fill="#fff3e0"/><rect x="32" y="42" width="36" height="46" rx="3" fill="#fff" opacity="0.95"/><rect x="45" y="78" width="10" height="10" rx="2" fill="#ff6f00"/></svg></div></div>
+    <div id="loginForm">
+      <h2>BOM Login</h2>
+      <p class="auth-sub">Authorized Access Only</p>
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-success" id="loginSuccess"></div>
+      <div class="form-group"><label>Email</label><input type="email" class="form-control" id="loginEmail" placeholder="your.email@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" class="form-control" id="loginPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%" onclick="doLogin()">Login</button>
+      <div class="auth-link" onclick="showForgotPw()">Forgot Password?</div>
+      <div class="auth-link" onclick="window.location.href='/'">Back to Resident Portal</div>
+    </div>
+    <div id="forgotForm" style="display:none">
+      <h2>Reset Password</h2>
+      <p class="auth-sub">Enter registered email for reset link</p>
+      <div class="auth-error" id="forgotError"></div>
+      <div class="auth-success" id="forgotSuccess"></div>
+      <div class="form-group"><label>Email</label><input type="email" class="form-control" id="forgotEmail" placeholder="your.email@example.com"></div>
+      <button class="btn btn-primary btn-lg" style="width:100%" onclick="doForgotPw()">Send Reset Link</button>
+      <div class="auth-link" onclick="showLoginFm()">Back to Login</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD LAYOUT -->
+<div class="dashboard-layout" id="dashLayout">
+
+  <!-- HEADER BAR -->
+  <header class="dash-header">
+    <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">&#9776;</button>
+    <div class="logo-sm" onclick="window.location.href='/'"><svg viewBox="0 0 100 100" width="26" height="26" fill="none"><circle cx="50" cy="22" r="12" fill="#fff3e0"/><rect x="32" y="42" width="36" height="46" rx="3" fill="#fff" opacity="0.95"/><rect x="45" y="78" width="10" height="10" rx="2" fill="#ff6f00"/></svg></div>
+    <div class="header-text">
+      <div class="header-title">SUN TOWER RWA - BOM Dashboard</div>
+      <div class="header-sub">Block A2, Shipra Sun City, Indirapuram | BOM 2025-26</div>
+    </div>
+    <div class="header-right">
+      <span class="header-user" id="headerUser"></span>
+      <button class="header-btn" id="headerAuthBtn" onclick="toggleAuthBtn()">Login</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR BACKDROP (mobile) -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="dash-sidebar" id="dashSidebar">
+
+    <!-- KPI — standalone -->
+    <div class="sidebar-section">
+      <a class="sidebar-item standalone active" data-section="kpi" href="#">
+        <span class="item-icon">&#128200;</span>
+        <span class="item-label">KPI Dashboard</span>
+      </a>
+    </div>
+
+    <!-- Governance -->
+    <div class="sidebar-section">
+      <div class="sidebar-group" data-group="governance">
+        <div class="sidebar-group-header">
+          <span class="group-icon">&#127963;</span>
+          <span class="group-label">Governance</span>
+          <span class="group-caret">&#9662;</span>
+        </div>
+        <div class="sidebar-menu">
+          <a class="sidebar-item" data-section="election" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128499;</span>
+            <span class="item-label">Election</span>
+          </a>
+          <a class="sidebar-item" data-section="members" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128100;</span>
+            <span class="item-label">Members</span>
+          </a>
+          <a class="sidebar-item" data-section="committees" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128101;</span>
+            <span class="item-label">Committees</span>
+          </a>
+          <a class="sidebar-item" data-section="resolutions" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128220;</span>
+            <span class="item-label">Resolutions</span>
+          </a>
+          <a class="sidebar-item" data-section="documents" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128196;</span>
+            <span class="item-label">Documents</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operations -->
+    <div class="sidebar-section">
+      <div class="sidebar-group" data-group="operations">
+        <div class="sidebar-group-header">
+          <span class="group-icon">&#128736;</span>
+          <span class="group-label">Operations</span>
+          <span class="group-caret">&#9662;</span>
+        </div>
+        <div class="sidebar-menu">
+          <a class="sidebar-item" data-section="projects" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128679;</span>
+            <span class="item-label">Projects</span>
+          </a>
+          <a class="sidebar-item" data-section="complaints_mgmt" data-perm="canManageComplaints" href="#">
+            <span class="item-icon">&#128221;</span>
+            <span class="item-label">Complaints</span>
+          </a>
+          <a class="sidebar-item" data-section="challenges" data-perm="isBOM" href="#">
+            <span class="item-icon">&#9888;</span>
+            <span class="item-label">Challenges</span>
+          </a>
+          <a class="sidebar-item" data-section="allocate" data-perm="isOfficeBearer" href="#">
+            <span class="item-icon">&#128203;</span>
+            <span class="item-label">Allocate</span>
+          </a>
+          <a class="sidebar-item" data-section="dashboard" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128202;</span>
+            <span class="item-label">Summary</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finance -->
+    <div class="sidebar-section">
+      <div class="sidebar-group" data-group="finance">
+        <div class="sidebar-group-header">
+          <span class="group-icon">&#128176;</span>
+          <span class="group-label">Finance</span>
+          <span class="group-caret">&#9662;</span>
+        </div>
+        <div class="sidebar-menu">
+          <a class="sidebar-item" data-section="financials" data-perm="canManageFinances" href="#">
+            <span class="item-icon">&#8377;</span>
+            <span class="item-label">Financials</span>
+          </a>
+          <a class="sidebar-item" data-section="meetings" data-perm="canManageMeetings" href="#">
+            <span class="item-icon">&#128197;</span>
+            <span class="item-label">Meetings</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Community -->
+    <div class="sidebar-section">
+      <div class="sidebar-group" data-group="community">
+        <div class="sidebar-group-header">
+          <span class="group-icon">&#128101;</span>
+          <span class="group-label">Community</span>
+          <span class="group-caret">&#9662;</span>
+        </div>
+        <div class="sidebar-menu">
+          <a class="sidebar-item" data-section="events_mgmt" data-perm="canManageEvents" href="#">
+            <span class="item-icon">&#127881;</span>
+            <span class="item-label">Events</span>
+          </a>
+          <a class="sidebar-item" data-section="polls_mgmt" data-perm="canCreatePolls" href="#">
+            <span class="item-icon">&#128499;</span>
+            <span class="item-label">Polls</span>
+          </a>
+          <a class="sidebar-item" data-section="directory" data-perm="isBOM" href="#">
+            <span class="item-icon">&#128269;</span>
+            <span class="item-label">Directory</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin — standalone (admin-only) -->
+    <div class="sidebar-section">
+      <a class="sidebar-item standalone admin-item" data-section="admin" data-perm="isAdmin" href="#" style="display:none">
+        <span class="item-icon">&#128274;</span>
+        <span class="item-label">Admin</span>
+      </a>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+      <span class="sidebar-footer-text">
+        <a href="/">&#127968; Resident Portal</a>
+      </span>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="dash-main" id="dashMain">
+
+    <!-- BOM Locked state -->
+    <div id="bomLocked" style="text-align:center;padding:100px 20px;">
+      <div style="font-size:4rem;margin-bottom:15px;">&#128274;</div>
+      <h2 style="color:var(--primary);margin-bottom:10px;">BOM Dashboard - Restricted Access</h2>
+      <p style="color:var(--text-light);margin-bottom:20px;">Only authorized Board of Management members can access this dashboard.</p>
+      <button class="btn btn-primary btn-lg" onclick="showAuth()">Login to Continue</button>
+    </div>
+
+    <!-- BOM Content (shown after login) -->
+    <div id="bomContent" style="display:none;">
+
+      <!-- KPI Dashboard -->
+      <div class="bom-sec active" id="bs_kpi">
+        <h2 class="page-title">&#128200; Governance Dashboard</h2>
+        <p class="page-subtitle">Real-time overview of society operations &amp; KPIs</p>
+        <div class="kpi-row">
+          <div class="kpi-card kpi-finance"><div class="kpi-icon" style="background:#1a237e">&#8377;</div><div class="kpi-value" id="kpiFundBalance">--</div><div class="kpi-label">Fund Balance</div><div class="kpi-trend" id="kpiFundTrend"></div></div>
+          <div class="kpi-card kpi-finance"><div class="kpi-icon" style="background:#2e7d32">&#128176;</div><div class="kpi-value" id="kpiMonthlyCollection">--</div><div class="kpi-label">Monthly Collection</div><div class="kpi-sub" id="kpiCollectionPct"></div></div>
+          <div class="kpi-card kpi-finance"><div class="kpi-icon" style="background:#e65100">&#128178;</div><div class="kpi-value" id="kpiMonthlyExpenses">--</div><div class="kpi-label">Monthly Expenses</div><div class="kpi-sub" id="kpiExpenseBreakup"></div></div>
+          <div class="kpi-card kpi-finance"><div class="kpi-icon" style="background:#b71c1c">&#9888;</div><div class="kpi-value" id="kpiOverdueDues">--</div><div class="kpi-label">Overdue Dues</div><div class="kpi-sub" id="kpiOverdueAmount"></div></div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card" onclick="showSection('projects')" style="cursor:pointer"><div class="kpi-icon" style="background:#0d47a1">&#128679;</div><div class="kpi-value" id="kpiActiveProjects">--</div><div class="kpi-label">Active Projects</div></div>
+          <div class="kpi-card" onclick="showSection('complaints_mgmt')" style="cursor:pointer"><div class="kpi-icon" style="background:#e65100">&#128221;</div><div class="kpi-value" id="kpiOpenComplaints">--</div><div class="kpi-label">Open Complaints</div><div class="kpi-sub kpi-critical" id="kpiCriticalComplaints"></div></div>
+          <div class="kpi-card"><div class="kpi-icon" style="background:#4a148c">&#9989;</div><div class="kpi-value" id="kpiPendingApprovals">--</div><div class="kpi-label">Pending Approvals</div></div>
+          <div class="kpi-card"><div class="kpi-icon" style="background:#00695c">&#128197;</div><div class="kpi-value" id="kpiUpcomingEvents">--</div><div class="kpi-label">Upcoming Events</div></div>
+        </div>
+        <div class="kpi-charts-row">
+          <div class="kpi-chart-card"><h3>Expense Trend (6 Months)</h3><canvas id="chartExpenseTrend" height="250"></canvas></div>
+          <div class="kpi-chart-card"><h3>Committee Progress</h3><canvas id="chartCommitteeProgress" height="250"></canvas></div>
+        </div>
+        <div class="kpi-actions-row">
+          <div class="kpi-action-card"><h3>&#128680; Recent Complaints</h3><div id="kpiRecentComplaints"><div class="kpi-empty">No complaints</div></div></div>
+          <div class="kpi-action-card"><h3>&#128176; Pending Expense Approvals</h3><div id="kpiPendingExpenses"><div class="kpi-empty">No pending expenses</div></div></div>
+          <div class="kpi-action-card"><h3>&#128197; Upcoming Deadlines</h3><div id="kpiUpcomingDeadlines"><div class="kpi-empty">No upcoming events</div></div></div>
+        </div>
+        <div class="kpi-ai-card" id="kpiAiInsights" style="display:none">
+          <div class="kpi-ai-header"><span>&#129302; AI Insights</span><button class="btn btn-sm btn-outline" onclick="refreshAIInsights()">Refresh</button></div>
+          <div id="kpiAiContent"></div>
+        </div>
+      </div>
+
+      <!-- Complaints Management -->
+      <div class="bom-sec" id="bs_complaints_mgmt">
+        <h2 class="page-title">&#128221; Complaints Management</h2>
+        <p class="page-subtitle">View, assign, and resolve resident complaints</p>
+        <div class="kpi-row" style="margin-bottom:20px">
+          <div class="kpi-card"><div class="kpi-value" id="cmtOpen">0</div><div class="kpi-label">Open</div></div>
+          <div class="kpi-card"><div class="kpi-value" id="cmtInProgress">0</div><div class="kpi-label">In Progress</div></div>
+          <div class="kpi-card"><div class="kpi-value" id="cmtResolved">0</div><div class="kpi-label">Resolved</div></div>
+          <div class="kpi-card"><div class="kpi-value" id="cmtCritical" style="color:#b71c1c">0</div><div class="kpi-label">Critical</div></div>
+        </div>
+        <div class="proj-filter-bar">
+          <button class="proj-filter-btn active" onclick="filterComplaints('All',this)">All</button>
+          <button class="proj-filter-btn" onclick="filterComplaints('Open',this)">Open</button>
+          <button class="proj-filter-btn" onclick="filterComplaints('In Progress',this)">In Progress</button>
+          <button class="proj-filter-btn" onclick="filterComplaints('Escalated',this)">Escalated</button>
+          <button class="proj-filter-btn" onclick="filterComplaints('Resolved',this)">Resolved</button>
+        </div>
+        <div id="complaintsList"></div>
+      </div>
+
+      <!-- Financials -->
+      <div class="bom-sec" id="bs_financials">
+        <h2 class="page-title">&#128176; Financial Dashboard</h2>
+        <p class="page-subtitle">Monthly financial summary &amp; expense tracking</p>
+        <div class="kpi-charts-row">
+          <div class="kpi-chart-card"><h3>Income vs Expenses (12 Months)</h3><canvas id="chartFinancialOverview" height="280"></canvas></div>
+          <div class="kpi-chart-card"><h3>Expense Breakdown</h3><canvas id="chartExpenseBreakdown" height="280"></canvas></div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <h3>&#128203; Add Monthly Financial Entry</h3>
+          <div class="grid-2" style="margin-top:12px">
+            <div class="form-group"><label>Month</label><input type="month" class="form-control" id="finMonth"></div>
+            <div class="form-group"><label>Fund Balance (&#8377;)</label><input type="number" class="form-control" id="finBalance" placeholder="e.g. 1500000"></div>
+            <div class="form-group"><label>Total Collection (&#8377;)</label><input type="number" class="form-control" id="finCollection" placeholder="e.g. 600000"></div>
+            <div class="form-group"><label>Total Expenses (&#8377;)</label><input type="number" class="form-control" id="finExpenses" placeholder="e.g. 450000"></div>
+            <div class="form-group"><label>Maintenance Due (&#8377;)</label><input type="number" class="form-control" id="finMaintDue" placeholder="e.g. 650000"></div>
+            <div class="form-group"><label>Maintenance Collected (&#8377;)</label><input type="number" class="form-control" id="finMaintCollected" placeholder="e.g. 580000"></div>
+          </div>
+          <div class="form-group"><label>Notes</label><textarea class="form-control" id="finNotes" placeholder="Any notes for this month..."></textarea></div>
+          <button class="btn btn-primary" onclick="saveFinancialEntry()">Save Financial Entry</button>
+          <div class="auth-success" id="finSuccess" style="margin-top:10px"></div>
+        </div>
+        <div id="financialTable" style="margin-top:20px"></div>
+      </div>
+
+      <!-- Meetings -->
+      <div class="bom-sec" id="bs_meetings">
+        <h2 class="page-title">&#128196; Meeting Minutes &amp; Resolutions</h2>
+        <p class="page-subtitle">Record BOM, GBM, and committee meeting minutes</p>
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="showMeetingForm()">+ New Meeting Minutes</button>
+          <select class="form-control" style="max-width:200px" id="meetingTypeFilter" onchange="loadMeetings()">
+            <option value="">All Types</option><option value="BOM">BOM</option><option value="GBM">GBM</option><option value="Committee">Committee</option><option value="Emergency">Emergency</option>
+          </select>
+        </div>
+        <div id="meetingForm" style="display:none" class="card">
+          <h3>New Meeting Minutes</h3>
+          <div class="grid-2" style="margin-top:12px">
+            <div class="form-group"><label>Meeting Type</label><select class="form-control" id="mtgType"><option>BOM</option><option>GBM</option><option>Committee</option><option>Emergency</option></select></div>
+            <div class="form-group"><label>Date</label><input type="date" class="form-control" id="mtgDate"></div>
+          </div>
+          <div class="form-group"><label>Title</label><input type="text" class="form-control" id="mtgTitle" placeholder="e.g. BOM Meeting - February 2026"></div>
+          <div class="form-group"><label>Agenda</label><textarea class="form-control" id="mtgAgenda" placeholder="Meeting agenda items..."></textarea></div>
+          <div class="form-group"><label>Minutes</label><textarea class="form-control" id="mtgMinutes" placeholder="Detailed meeting minutes..." style="min-height:150px"></textarea></div>
+          <div class="form-group"><label>Key Decisions (one per line)</label><textarea class="form-control" id="mtgDecisions" placeholder="Decision 1&#10;Decision 2&#10;..."></textarea></div>
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="saveMeetingMinutes()">Save Minutes</button>
+            <button class="btn btn-outline" onclick="aiSummarizeMeeting()">&#129302; AI Summary</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('meetingForm').style.display='none'">Cancel</button>
+          </div>
+          <div class="auth-success" id="mtgSuccess" style="margin-top:10px"></div>
+        </div>
+        <div id="meetingsList"></div>
+      </div>
+
+      <!-- Events Management -->
+      <div class="bom-sec" id="bs_events_mgmt">
+        <h2 class="page-title">&#128197; Events Management</h2>
+        <p class="page-subtitle">Create and manage society events, meetings, and celebrations</p>
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="document.getElementById('eventForm').style.display=document.getElementById('eventForm').style.display==='none'?'block':'none'">+ New Event</button>
+        </div>
+        <div id="eventForm" style="display:none" class="card">
+          <h3>Create Event</h3>
+          <div class="grid-2" style="margin-top:12px">
+            <div class="form-group"><label>Title</label><input type="text" class="form-control" id="evtTitle" placeholder="Event title"></div>
+            <div class="form-group"><label>Type</label><select class="form-control" id="evtType"><option value="Meeting">Meeting</option><option value="Festival">Festival</option><option value="Maintenance">Maintenance</option><option value="Sports">Sports</option><option value="Cultural">Cultural</option><option value="Other">Other</option></select></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Start Date &amp; Time</label><input type="datetime-local" class="form-control" id="evtDate"></div>
+            <div class="form-group"><label>End Date &amp; Time (optional)</label><input type="datetime-local" class="form-control" id="evtEndDate"></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Venue</label><input type="text" class="form-control" id="evtVenue" placeholder="e.g. Clubhouse, Community Hall"></div>
+            <div class="form-group"><label>Organizer</label><input type="text" class="form-control" id="evtOrganizer" placeholder="e.g. Cultural Committee"></div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea class="form-control" id="evtDescription" rows="3" placeholder="Event details..."></textarea></div>
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('eventForm').style.display='none'">Cancel</button>
+          </div>
+          <div class="auth-success" id="evtSuccess" style="margin-top:10px"></div>
+        </div>
+        <div id="eventsManageList"></div>
+      </div>
+
+      <!-- Polls Management -->
+      <div class="bom-sec" id="bs_polls_mgmt">
+        <h2 class="page-title">&#128499; Polls &amp; Voting</h2>
+        <p class="page-subtitle">Create community polls and view voting results</p>
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="document.getElementById('pollForm').style.display=document.getElementById('pollForm').style.display==='none'?'block':'none'">+ New Poll</button>
+        </div>
+        <div id="pollForm" style="display:none" class="card">
+          <h3>Create New Poll</h3>
+          <div class="form-group"><label>Question</label><input type="text" class="form-control" id="pollQuestion" placeholder="e.g. Should we install CCTV in parking area?"></div>
+          <div class="form-group"><label>Options (one per line, minimum 2)</label><textarea class="form-control" id="pollOptions" rows="4" placeholder="Yes&#10;No&#10;Need more discussion"></textarea></div>
+          <div class="grid-2">
+            <div class="form-group"><label>Expires On (optional)</label><input type="datetime-local" class="form-control" id="pollExpiry"></div>
+            <div></div>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="savePoll()">Create Poll</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('pollForm').style.display='none'">Cancel</button>
+          </div>
+          <div class="auth-success" id="pollSuccess" style="margin-top:10px"></div>
+        </div>
+        <div id="pollsManageList"></div>
+      </div>
+
+      <!-- Resolutions Log -->
+      <div class="bom-sec" id="bs_resolutions">
+        <h2 class="page-title">&#128220; Resolutions Log</h2>
+        <p class="page-subtitle">Track all BOM and GBM resolutions</p>
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="document.getElementById('resolutionForm').style.display=document.getElementById('resolutionForm').style.display==='none'?'block':'none'">+ New Resolution</button>
+          <select class="form-control" style="max-width:200px" id="resStatusFilter" onchange="loadResolutionsList()">
+            <option value="">All Status</option><option value="Passed">Passed</option><option value="Rejected">Rejected</option><option value="Deferred">Deferred</option><option value="Implemented">Implemented</option>
+          </select>
+        </div>
+        <div id="resolutionForm" style="display:none" class="card">
+          <h3>New Resolution</h3>
+          <div class="grid-2" style="margin-top:12px">
+            <div class="form-group"><label>Resolution No.</label><input type="text" class="form-control" id="resNo" placeholder="e.g. RES-2026-001"></div>
+            <div class="form-group"><label>Status</label><select class="form-control" id="resStatus"><option>Passed</option><option>Rejected</option><option>Deferred</option><option>Implemented</option></select></div>
+          </div>
+          <div class="form-group"><label>Title</label><input type="text" class="form-control" id="resTitle" placeholder="Resolution title"></div>
+          <div class="form-group"><label>Description</label><textarea class="form-control" id="resDesc" rows="3" placeholder="Resolution details..."></textarea></div>
+          <div class="grid-2">
+            <div class="form-group"><label>Proposed By</label><input type="text" class="form-control" id="resProposed"></div>
+            <div class="form-group"><label>Seconded By</label><input type="text" class="form-control" id="resSeconded"></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Votes For</label><input type="number" class="form-control" id="resVotesFor" value="0"></div>
+            <div class="form-group"><label>Votes Against</label><input type="number" class="form-control" id="resVotesAgainst" value="0"></div>
+          </div>
+          <div class="form-group"><label>Implementation Date</label><input type="date" class="form-control" id="resImplDate"></div>
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="saveResolution()">Save Resolution</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('resolutionForm').style.display='none'">Cancel</button>
+          </div>
+          <div class="auth-success" id="resSuccess" style="margin-top:10px"></div>
+        </div>
+        <div id="resolutionsList"></div>
+      </div>
+
+      <!-- Documents Library -->
+      <div class="bom-sec" id="bs_documents">
+        <h2 class="page-title">&#128196; Document Library</h2>
+        <p class="page-subtitle">Upload and manage society documents</p>
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="document.getElementById('docUploadForm').style.display=document.getElementById('docUploadForm').style.display==='none'?'block':'none'">+ Upload Document</button>
+          <select class="form-control" style="max-width:200px" id="docCategoryFilter" onchange="loadDocuments()">
+            <option value="">All Categories</option><option value="GBM Minutes">GBM Minutes</option><option value="BOM Minutes">BOM Minutes</option><option value="Financial Reports">Financial Reports</option><option value="Policies">Policies</option><option value="Forms">Forms</option><option value="Vendor Contracts">Vendor Contracts</option><option value="Legal">Legal</option><option value="Other">Other</option>
+          </select>
+          <input type="text" class="form-control" style="max-width:200px" id="docSearch" placeholder="Search documents..." oninput="loadDocuments()">
+        </div>
+        <div id="docUploadForm" style="display:none" class="card">
+          <h3>Upload Document</h3>
+          <div class="grid-2" style="margin-top:12px">
+            <div class="form-group"><label>Title</label><input type="text" class="form-control" id="docTitle" placeholder="Document title"></div>
+            <div class="form-group"><label>Category</label><select class="form-control" id="docCategory"><option>GBM Minutes</option><option>BOM Minutes</option><option>Financial Reports</option><option>Policies</option><option>Forms</option><option>Vendor Contracts</option><option>Legal</option><option>Other</option></select></div>
+          </div>
+          <div class="form-group"><label>File URL</label><input type="url" class="form-control" id="docUrl" placeholder="https://..."></div>
+          <div class="form-group"><label>Description</label><textarea class="form-control" id="docDesc" rows="2" placeholder="Brief description..."></textarea></div>
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="saveDocument()">Upload</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('docUploadForm').style.display='none'">Cancel</button>
+          </div>
+          <div class="auth-success" id="docSuccess" style="margin-top:10px"></div>
+        </div>
+        <div id="documentsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+      </div>
+
+      <!-- Election Results -->
+      <div class="bom-sec" id="bs_election">
+        <h2 class="page-title">Election Results - 01 February 2026</h2>
+        <div class="grid-2">
+          <div class="card" style="border-left-color:var(--success)"><h3>Election Summary</h3>
+            <table><tr><td><strong>Date</strong></td><td>01 Feb 2026</td></tr><tr><td><strong>Voter Turnout</strong></td><td><strong style="color:var(--success);font-size:1.2rem">174</strong></td></tr><tr><td><strong>Valid Ballots</strong></td><td>168 (6 rejected)</td></tr><tr><td><strong>Candidates</strong></td><td>12</td></tr><tr><td><strong>Seats</strong></td><td>10</td></tr></table>
+          </div>
+          <div class="card" style="border-left-color:var(--primary)"><h3>Highlights</h3>
+            <ul><li>Top candidate: <strong>129 votes</strong> (76.8%)</li><li>Only 23-vote gap between rank 1 and 10</li><li>All 10 members have strong mandate</li><li>STC: 6 members, STD: 3, STB: 1</li></ul>
+          </div>
+        </div>
+        <div class="card"><h3>Elected BOM Members</h3>
+          <table id="electionTable"><tr><th>#</th><th>Name</th><th>Flat</th><th>Votes</th><th>Position</th></tr></table>
+        </div>
+      </div>
+
+      <!-- Members -->
+      <div class="bom-sec" id="bs_members">
+        <h2 class="page-title">BOM Members Registration</h2>
+        <p class="page-subtitle">Only Admin can edit. Data saved to database.</p>
+        <div id="memberAdminLock" style="display:none"><div class="card" style="border-left-color:var(--warning);text-align:center"><p><strong>View Only</strong> - Contact Admin to make changes.</p></div></div>
+        <div class="member-form" id="memberForm"></div>
+        <div class="action-bar" id="memberActions"><button class="btn btn-primary" onclick="saveMembers()">Save to Database</button><button class="btn btn-secondary" onclick="loadElected()">Load Elected Members</button></div>
+      </div>
+
+      <!-- Challenges -->
+      <div class="bom-sec" id="bs_challenges">
+        <h2 class="page-title">Challenges &amp; Responsibilities</h2>
+        <div id="challengesArea"></div>
+      </div>
+
+      <!-- Committees -->
+      <div class="bom-sec" id="bs_committees">
+        <h2 class="page-title">7 Working Committees</h2>
+        <p class="page-subtitle">Assign BOM members and resident volunteers</p>
+        <div class="action-bar" id="commActions" style="display:none"><button class="btn btn-primary" onclick="saveCommitteesUI()">Save Committee Assignments</button></div>
+        <div id="committeesArea"></div>
+      </div>
+
+      <!-- Allocate -->
+      <div class="bom-sec" id="bs_allocate">
+        <h2 class="page-title">Task Allocation</h2>
+        <div class="action-bar"><button class="btn btn-primary" onclick="autoAssign()">Auto-Assign</button><button class="btn btn-secondary" onclick="clearAssign()">Clear</button></div>
+        <div id="allocArea"></div>
+      </div>
+
+      <!-- Dashboard / Summary -->
+      <div class="bom-sec" id="bs_dashboard">
+        <h2 class="page-title">Dashboard</h2>
+        <div class="action-bar"><button class="btn btn-primary" onclick="genDash()">Refresh</button><button class="btn btn-success" onclick="exportCSV()">Export CSV</button></div>
+        <div id="dashArea"></div><div id="chartArea"></div>
+      </div>
+
+      <!-- Projects -->
+      <div class="bom-sec" id="bs_projects">
+        <h2 class="page-title">Project Management Dashboard</h2>
+        <p class="page-subtitle">AI-powered monitoring of all society projects across committees</p>
+        <div id="projStatsBar"></div>
+        <div id="projFilterBar"></div>
+        <div id="projCreateArea"></div>
+        <div id="projDashArea"></div>
+        <div id="aiInsightsArea"></div>
+      </div>
+
+      <!-- Resident Directory -->
+      <div class="bom-sec" id="bs_directory">
+        <h2 class="page-title">&#128269; Resident Directory</h2>
+        <p class="page-subtitle">Search Sun Tower residents by name, flat number, or tower</p>
+        <div class="directory-search-bar">
+          <input type="text" class="form-control" id="dirSearchInput" placeholder="Search by name, flat number, or tower..." oninput="searchDirectory()" style="font-size:1rem;padding:12px 16px">
+          <div class="directory-filters">
+            <select class="form-control" id="dirTowerFilter" onchange="searchDirectory()"><option value="">All Towers</option><option value="STA1">STA1</option><option value="STA2">STA2</option><option value="STB1">STB1</option><option value="STB2">STB2</option><option value="STC1">STC1</option><option value="STC2">STC2</option><option value="STD1">STD1</option><option value="STD2">STD2</option></select>
+            <select class="form-control" id="dirTypeFilter" onchange="searchDirectory()"><option value="">All Types</option><option value="Owner">Owner</option><option value="Tenant">Tenant</option><option value="Owner Family">Owner Family</option><option value="Tenant Family">Tenant Family</option></select>
+            <select class="form-control" id="dirStatusFilter" onchange="searchDirectory()"><option value="">All Status</option><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+          </div>
+        </div>
+        <div class="directory-stats" id="dirStats"></div>
+        <div id="dirResults" style="margin-top:15px"></div>
+      </div>
+
+      <!-- Admin Panel -->
+      <div class="bom-sec" id="bs_admin">
+        <h2 class="page-title">Admin Panel</h2>
+        <div id="adminLock"><p style="color:var(--danger);font-weight:600;text-align:center;padding:40px">Admin access required (suntowershipra@gmail.com)</p></div>
+        <div id="adminPanel" style="display:none">
+          <div class="admin-section"><h3>&#128100; Create BOM Account</h3>
+            <div class="grid-2"><div class="form-group"><label>Member</label><select class="form-control" id="accName"></select></div><div class="form-group"><label>Email</label><input type="email" class="form-control" id="accEmail" placeholder="member@email.com"></div></div>
+            <div class="form-group"><label>Temp Password (min 6)</label><input type="text" class="form-control" id="accPass" placeholder="temporary123"></div>
+            <button class="btn btn-primary" onclick="createAccount()">Create Account</button>
+            <div class="auth-error" id="accErr" style="margin-top:10px"></div>
+            <div id="accSuccessCard" style="margin-top:10px"></div>
+          </div>
+          <div class="admin-section" style="border-color:var(--primary);background:#e8eaf6"><h3 style="color:var(--primary);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128100; BOM Accounts <span><button class="btn btn-sm" style="background:#00695c;color:#fff;font-size:0.75rem;margin-right:6px" onclick="syncAllAccountsToAuth()" title="Sync to Auth">&#128260; Sync to Auth</button><button class="btn btn-sm" style="background:var(--primary);color:#fff;font-size:0.75rem" onclick="buildAccountList()">&#8635; Refresh</button></span></h3><div id="syncStatus" style="display:none;padding:8px 12px;margin-bottom:10px;border-radius:8px;font-size:0.85rem"></div>
+            <div id="acctDashArea"></div>
+          </div>
+          <div class="admin-section"><h3>&#128196; Upload Notice</h3>
+            <div class="form-group"><label>Title</label><input type="text" class="form-control" id="nTitle"></div>
+            <div class="form-group"><label>Summary</label><textarea class="form-control" id="nSummary"></textarea></div>
+            <div class="grid-2"><div class="form-group"><label>Category</label><select class="form-control" id="nCat"><option>General</option><option>Financial</option><option>Maintenance</option><option>Event</option><option>Emergency</option><option>Meeting</option></select></div><div class="form-group"><label>Date</label><input type="date" class="form-control" id="nDate"></div></div>
+            <div class="form-group"><label>File (PDF/Image)</label><input type="file" class="form-control" id="nFile" accept=".pdf,.jpg,.jpeg,.png"></div>
+            <button class="btn btn-success" onclick="uploadNotice()">Upload</button>
+            <div class="auth-success" id="nSuc" style="margin-top:10px"></div>
+          </div>
+          <div class="admin-section" style="border-color:#00695c;background:#e0f2f1"><h3 style="color:#00695c;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128101; Resident Registration Requests <button class="btn btn-sm" style="background:#00695c;color:#fff;font-size:0.75rem" onclick="loadRegRequests();loadApprovedResidents()">&#8635; Refresh</button></h3>
+            <div id="regRequestsArea"><p style="color:var(--text-light)">Loading...</p></div>
+          </div>
+          <div class="admin-section" style="border-color:#004d40;background:#e0f2f1"><h3 style="color:#004d40">&#9989; Approved Residents</h3>
+            <div id="approvedResidentsArea"><p style="color:var(--text-light)">Loading...</p></div>
+          </div>
+          <div class="admin-section" style="border-color:#1565c0;background:#e3f2fd"><h3 style="color:#1565c0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128221; Manage Resident Data <button class="btn btn-sm" style="background:#1565c0;color:#fff;font-size:0.75rem" onclick="loadManageResidents()">&#8635; Refresh</button></h3>
+            <p style="font-size:0.82rem;color:#555;margin-bottom:12px">Add, edit, or search resident records.</p>
+            <div style="display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap">
+              <button class="btn btn-sm" style="background:#1565c0;color:#fff" onclick="showAddResidentForm()">&#10133; Add Resident</button>
+              <input type="text" class="form-control" id="mgrSearchInput" placeholder="Search by name, flat, email, tower..." oninput="filterManagedResidents()" style="flex:1;min-width:200px;padding:8px 12px;font-size:0.85rem">
+              <select class="form-control" id="mgrTowerFilter" onchange="filterManagedResidents()" style="width:auto;padding:8px 12px;font-size:0.85rem">
+                <option value="">All Towers</option><option>STA1</option><option>STA2</option><option>STB1</option><option>STB2</option><option>STC1</option><option>STC2</option><option>STD1</option><option>STD2</option>
+              </select>
+            </div>
+            <div id="addResidentFormArea" style="display:none"></div>
+            <div id="editResidentFormArea" style="display:none"></div>
+            <div id="mgrResidentsStats" style="margin-bottom:12px"></div>
+            <div id="mgrResidentsArea"><p style="color:var(--text-light)">Loading...</p></div>
+          </div>
+          <div class="admin-section"><h3>&#128172; Resident Messages</h3><div id="adminMsgs"><p style="color:var(--text-light)">Loading...</p></div></div>
+          <div class="admin-section" style="border-color:#b71c1c;background:#fce4ec"><h3 style="color:#b71c1c;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">&#128270; Security Audit Log <button class="btn btn-sm" style="background:#b71c1c;color:#fff;font-size:0.75rem" onclick="SunAudit.buildAuditViewer('auditLogArea')">&#8635; Load Audit Log</button></h3>
+            <div id="auditLogArea"><p style="color:#999;text-align:center;padding:15px">Click "Load Audit Log" to view security events.</p></div>
+          </div>
+          <div class="admin-section" style="border-color:#1a237e;background:#e8eaf6"><h3 style="color:var(--primary)">&#9881; Admin Settings</h3>
+            <div class="grid-2">
+              <div style="background:#fff;padding:15px;border-radius:10px">
+                <h4 style="color:var(--primary);margin-bottom:12px">&#128274; Change Admin Password</h4>
+                <div class="form-group"><label>Current Password</label><input type="password" class="form-control" id="curPass" placeholder="Enter current password"></div>
+                <div class="form-group"><label>New Password (min 6 chars)</label><input type="password" class="form-control" id="newPass" placeholder="Enter new password"></div>
+                <div class="form-group"><label>Confirm New Password</label><input type="password" class="form-control" id="cfmPass" placeholder="Re-enter new password"></div>
+                <button class="btn btn-primary" onclick="changeAdminPass()">Update Password</button>
+                <div class="auth-error" id="passErr" style="margin-top:10px"></div>
+                <div class="auth-success" id="passSuc" style="margin-top:10px"></div>
+              </div>
+              <div style="background:#fff;padding:15px;border-radius:10px">
+                <h4 style="color:var(--primary);margin-bottom:12px">&#128100; Admin Profile</h4>
+                <div class="form-group"><label>Admin Email</label><input type="email" class="form-control" id="adminEmailField" placeholder="admin@email.com"></div>
+                <div class="form-group"><label>Admin Mobile No.</label><input type="tel" class="form-control" id="adminMobile" placeholder="e.g. 9876543210"></div>
+                <div class="form-group"><label>Admin Display Name</label><input type="text" class="form-control" id="adminDispName" placeholder="e.g. Sunil Kumar"></div>
+                <button class="btn btn-success" onclick="saveAdminProfile()">Save Profile</button>
+                <div class="auth-error" id="profErr" style="margin-top:10px"></div>
+                <div class="auth-success" id="profSuc" style="margin-top:10px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /bomContent -->
+  </main>
+
+</div><!-- /dashboard-layout -->
+
+<!-- NOTICE MODAL -->
+<div class="modal-overlay hidden" id="noticeModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content"><div class="modal-header"><h3 id="mTitle">Notice</h3><button class="modal-close" onclick="closeModal()">&times;</button></div><div class="modal-body" id="mBody"></div></div>
+</div>
+
+<!-- SESSION EXPIRED -->
+<div class="session-expired-overlay hidden" id="sessionExpiredOverlay">
+  <div class="session-expired-card">
+    <div class="session-expired-icon">&#128274;</div>
+    <h2>Session Expired</h2>
+    <p>Your session has timed out. Please login again.</p>
+    <button class="btn btn-primary btn-lg" onclick="window.location.reload()">Login Again</button>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- JS -->
+<script src="js/bom-sidebar.js?v=20260315"></script>
+<script src="js/bom-app.js?v=20260316b"></script>
+
+</body>
+</html>
