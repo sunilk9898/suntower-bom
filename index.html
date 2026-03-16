@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="stylesheet" href="css/style.css?v=20260315">
+<link rel="stylesheet" href="css/style.css?v=20260316">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="js/supabase-config.js?v=20260315"></script>
@@ -78,7 +78,7 @@
 </div>
 
 <!-- RESIDENT PORTAL (now the only page) -->
-<div id="residentLocked" style="text-align:center;padding:80px 20px;">
+<div id="residentLocked" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 48px);text-align:center;padding:20px;">
   <div style="font-size:4rem;margin-bottom:15px">&#127968;</div>
   <h2 style="color:#00695c;margin-bottom:10px;">Welcome to Sun Tower</h2>
   <p style="color:#666;margin-bottom:8px;">Resident Portal for registered flat owners.</p>
@@ -90,7 +90,7 @@
   <div style="margin-top:20px"><a href="https://bom.suntower.in" style="color:#1a237e;font-size:0.85rem;font-weight:600;text-decoration:none">&#128274; BOM / Admin Login →</a></div>
 </div>
 
-<div id="residentContent" style="display:none">
+<div id="residentContent" style="display:none;max-width:1200px;margin:0 auto;padding:60px 20px 40px">
 
   <!-- Welcome Banner + Payment Status -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px" class="res-top-row">

@@ -4,7 +4,7 @@
 // Provides offline shell caching and background sync
 // Version: 1.0.0
 
-const CACHE_NAME = 'suntower-resident-v2';
+const CACHE_NAME = 'suntower-resident-v3';
 const SHELL_FILES = [
   '/',
   '/index.html',
